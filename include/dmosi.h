@@ -31,9 +31,11 @@ typedef struct dmosi_mutex* dmosi_mutex_t;
 /**
  * @brief Create a mutex
  *
+ * @param recursive Whether the mutex should be recursive
+ *
  * @return dmosi_mutex_t Created mutex handle
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmosi_mutex_t, _mutex_create,    (void) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_mutex_t, _mutex_create,    (bool recursive) );
 
 /**
  * @brief Destroy a mutex
