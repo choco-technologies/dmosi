@@ -33,14 +33,14 @@ typedef struct dmosi_mutex* dmosi_mutex_t;
  *
  * @return dmosi_mutex_t Created mutex handle
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmosi_mutex_t, mutex_create,    (void) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_mutex_t, _mutex_create,    (void) );
 
 /**
  * @brief Destroy a mutex
  *
  * @param mutex Mutex handle to destroy
  */
-DMOD_BUILTIN_API( dmosi, 1.0, void,          mutex_destroy,   (dmosi_mutex_t mutex) );
+DMOD_BUILTIN_API( dmosi, 1.0, void,          _mutex_destroy,   (dmosi_mutex_t mutex) );
 
 /**
  * @brief Lock a mutex
@@ -48,7 +48,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,          mutex_destroy,   (dmosi_mutex_t mut
  * @param mutex Mutex handle to lock
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,           mutex_lock,      (dmosi_mutex_t mutex) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,           _mutex_lock,      (dmosi_mutex_t mutex) );
 
 /**
  * @brief Unlock a mutex
@@ -56,7 +56,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,           mutex_lock,      (dmosi_mutex_t mut
  * @param mutex Mutex handle to unlock
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,           mutex_unlock,    (dmosi_mutex_t mutex) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,           _mutex_unlock,    (dmosi_mutex_t mutex) );
 
 /** @} */ // end of DMOSI_MUTEX_API
 

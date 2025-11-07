@@ -14,23 +14,23 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _deinit, (void) )
 //==============================================================================
 //                              MUTEX API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_mutex_t, mutex_create,    (void) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_mutex_t, _mutex_create,    (void) )
 {
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, mutex_destroy,   (dmosi_mutex_t mutex) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _mutex_destroy,   (dmosi_mutex_t mutex) )
 {
     (void)mutex;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, mutex_lock,      (dmosi_mutex_t mutex) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _mutex_lock,      (dmosi_mutex_t mutex) )
 {
     (void)mutex;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, mutex_unlock,    (dmosi_mutex_t mutex) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _mutex_unlock,    (dmosi_mutex_t mutex) )
 {
     (void)mutex;
     return -ENOSYS;
