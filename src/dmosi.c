@@ -195,6 +195,10 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _timer_reset,   (dmosi_timer_t
  * This implementation provides the DMOD mutex API using the underlying
  * DMOSI mutex operations. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
  * is not defined.
+ * 
+ * @note These functions assume dmosi_mutex_t is pointer-compatible with void*.
+ *       The opaque dmosi_mutex_t type is defined as 'struct dmosi_mutex*', which
+ *       is safely castable to/from void*.
  */
 
 void* Dmod_Mutex_Create(bool recursive)

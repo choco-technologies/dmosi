@@ -304,6 +304,15 @@ typedef struct dmosi_timer* dmosi_timer_t;
 
 /**
  * @brief Timer callback function type
+ * 
+ * This callback is invoked when the timer expires. For auto-reload timers,
+ * it is called periodically at the specified interval. For one-shot timers,
+ * it is called once when the timer expires.
+ * 
+ * @param arg User-provided argument passed to the callback
+ * 
+ * @note The callback is typically executed in timer/interrupt context.
+ *       Keep the callback short and avoid blocking operations.
  */
 typedef void (*dmosi_timer_callback_t)(void* arg);
 
