@@ -1,0 +1,95 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-20.04]
+        build_type: [Debug, Release]
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential
+        
+    - name: Configure CMake (Default)
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
+        
+    - name: Build (Default)
+      run: |
+        cd build
+        make -j$(nproc)
+        
+    - name: Verify library was created
+      run: |
+        test -f build/libdmosi.a
+        echo "✓ libdmosi.a created successfully"
+        
+    - name: Clean for second build
+      run: |
+        rm -rf build
+        
+    - name: Configure CMake (With DMOSI_DONT_IMPLEMENT_DMOD_API)
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DDMOSI_DONT_IMPLEMENT_DMOD_API=ON ..
+        
+    - name: Build (With DMOSI_DONT_IMPLEMENT_DMOD_API)
+      run: |
+        cd build
+        make -j$(nproc)
+        
+    - name: Verify library was created (second build)
+      run: |
+        test -f build/libdmosi.a
+        echo "✓ libdmosi.a created successfully with DMOSI_DONT_IMPLEMENT_DMOD_API=ON"
+
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        brew install cmake
+        
+    - name: Configure CMake
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
+        
+    - name: Build
+      run: |
+        cd build
+        make -j$(sysctl -n hw.ncpu)
+        
+    - name: Verify library was created
+      run: |
+        test -f build/libdmosi.a
+        echo "✓ libdmosi.a created successfully on macOS"
