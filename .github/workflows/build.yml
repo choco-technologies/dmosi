@@ -15,7 +15,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/choco-technologies/dmod-builder:latest
+      image: chocotechnologies/dmod:1.0.2
     strategy:
       fail-fast: false
       matrix:
