@@ -129,6 +129,12 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_current,  
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_current, (dmod_process_t process) )
+{
+    (void)process;
+    return -ENOSYS;
+}
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_state_t, _process_get_state, (dmod_process_t process) )
 {
     (void)process;

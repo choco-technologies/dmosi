@@ -162,6 +162,14 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_wait,      (dmod_process_
 DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_current,   (void) );
 
 /**
+ * @brief Set current process
+ *
+ * @param process Process handle to set as current
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_current, (dmod_process_t process) );
+
+/**
  * @brief Get process state
  *
  * @param process Process handle
