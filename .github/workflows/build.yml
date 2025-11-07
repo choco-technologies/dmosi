@@ -12,22 +12,18 @@ permissions:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/choco-technologies/dmod-builder:latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-20.04]
         build_type: [Debug, Release]
         
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake build-essential
         
     - name: Configure CMake (Default)
       run: |
@@ -65,34 +61,3 @@ jobs:
         test -f build/libdmosi.a
         echo "✓ libdmosi.a created successfully with DMOSI_DONT_IMPLEMENT_DMOD_API=ON"
 
-  build-macos:
-    name: Build on macOS
-    runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [Debug, Release]
-        
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Install dependencies
-      run: |
-        brew install cmake
-        
-    - name: Configure CMake
-      run: |
-        mkdir -p build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
-        
-    - name: Build
-      run: |
-        cd build
-        make -j$(sysctl -n hw.ncpu)
-        
-    - name: Verify library was created
-      run: |
-        test -f build/libdmosi.a
-        echo "✓ libdmosi.a created successfully on macOS"

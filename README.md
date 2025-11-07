@@ -78,33 +78,7 @@ target_link_libraries(your_target PRIVATE dmosi)
 
 ### Implementing RTOS-Specific Functions
 
-To implement DMOSI for your specific RTOS, override the weak implementations by providing strong implementations in your library:
-
-```c
-// Example: FreeRTOS implementation
-#include "dmosi.h"
-#include "FreeRTOS.h"
-#include "semphr.h"
-
-dmosi_mutex_t dmosi_mutex_create(bool recursive)
-{
-    if (recursive) {
-        return (dmosi_mutex_t)xSemaphoreCreateRecursiveMutex();
-    } else {
-        return (dmosi_mutex_t)xSemaphoreCreateMutex();
-    }
-}
-
-int dmosi_mutex_lock(dmosi_mutex_t mutex)
-{
-    if (xSemaphoreTake((SemaphoreHandle_t)mutex, portMAX_DELAY) == pdTRUE) {
-        return 0;
-    }
-    return -1;
-}
-
-// ... implement other functions
-```
+To implement DMOSI for your specific RTOS, override the weak implementations by providing strong implementations in your library. Create a separate library or repository that links against DMOSI and provides the actual implementations for your target RTOS.
 
 ### Using DMOSI in Your Application
 

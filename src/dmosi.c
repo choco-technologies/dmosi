@@ -67,7 +67,7 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_post,    (dmosi_sem
 //==============================================================================
 //                              Thread API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (void (*entry)(void*), void* arg, int priority, size_t stack_size) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size) )
 {
     (void)entry;
     (void)arg;
@@ -100,11 +100,9 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _thread_sleep,     (uint32_t 
 //==============================================================================
 //                              Process API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (void (*entry)(void*), void* arg, int priority) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name) )
 {
-    (void)entry;
-    (void)arg;
-    (void)priority;
+    (void)name;
     return NULL;
 }
 
@@ -113,8 +111,105 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _process_destroy,   (dmod_pro
     (void)process;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_kill,      (dmod_process_t process) )
+{
+    (void)process;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_wait,      (dmod_process_t process, int32_t timeout_ms) )
+{
+    (void)process;
+    (void)timeout_ms;
+    return -ENOSYS;
+}
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_current,   (void) )
 {
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_state_t, _process_get_state, (dmod_process_t process) )
+{
+    (void)process;
+    return DMOSI_PROCESS_STATE_TERMINATED;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_id_t, _process_get_id, (dmod_process_t process) )
+{
+    (void)process;
+    return 0;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_id,    (dmod_process_t process, dmod_process_id_t pid) )
+{
+    (void)process;
+    (void)pid;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_name,  (dmod_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_uid,   (dmod_process_t process, dmod_user_id_t uid) )
+{
+    (void)process;
+    (void)uid;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_user_id_t, _process_get_uid,   (dmod_process_t process) )
+{
+    (void)process;
+    return 0;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_pwd,   (dmod_process_t process, const char* pwd) )
+{
+    (void)process;
+    (void)pwd;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (dmod_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_add_thread,    (dmod_process_t process, dmod_thread_t thread) )
+{
+    (void)process;
+    (void)thread;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_remove_thread, (dmod_process_t process, dmod_thread_t thread) )
+{
+    (void)process;
+    (void)thread;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _process_has_thread,    (dmod_process_t process, dmod_thread_t thread) )
+{
+    (void)process;
+    (void)thread;
+    return false;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_find_by_name, (const char* name) )
+{
+    (void)name;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_find_by_id,   (dmod_process_id_t pid) )
+{
+    (void)pid;
     return NULL;
 }
 
@@ -182,6 +277,19 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _timer_reset,   (dmosi_timer_t
 {
     (void)timer;
     return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _timer_set_period, (dmosi_timer_t timer, uint32_t period_ms) )
+{
+    (void)timer;
+    (void)period_ms;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _timer_get_period, (dmosi_timer_t timer) )
+{
+    (void)timer;
+    return 0;
 }
 
 //==============================================================================
