@@ -315,26 +315,26 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _timer_get_period, (dmosi
 //==============================================================================
 //                              DMOD Mutex API Implementation
 //==============================================================================
-#ifndef DMOSI_DONT_IMPLEMENT_DMOD_API
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX)
 
 /**
  * @brief DMOD mutex implementation using DMOSI
  *
  * This implementation provides the DMOD mutex API using the underlying
  * DMOSI mutex operations. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
- * is not defined.
+ * and DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX are not defined.
  *
  * @note These functions assume dmosi_mutex_t is pointer-compatible with void*.
  *       The opaque dmosi_mutex_t type is defined as 'struct dmosi_mutex*', which
  *       is safely castable to/from void*.
  */
 
-void* Dmod_Mutex_Create(bool recursive)
+void* Dmod_Mutex_New(bool recursive)
 {
     return (void*)dmosi_mutex_create(recursive);
 }
 
-void Dmod_Mutex_Destroy(void* mutex)
+void Dmod_Mutex_Delete(void* mutex)
 {
     dmosi_mutex_destroy((dmosi_mutex_t)mutex);
 }
@@ -349,5 +349,5 @@ int Dmod_Mutex_Unlock(void* mutex)
     return dmosi_mutex_unlock((dmosi_mutex_t)mutex);
 }
 
-#endif // DMOSI_DONT_IMPLEMENT_DMOD_API
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX
 

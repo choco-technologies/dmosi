@@ -122,6 +122,16 @@ By default, DMOSI provides implementations of DMOD mutex API functions (`Dmod_Mu
 set(DMOSI_DONT_IMPLEMENT_DMOD_API ON CACHE BOOL "Don't implement DMOD API" FORCE)
 ```
 
+### DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX
+
+This option provides more granular control over the DMOD API implementation. By default, DMOSI implements DMOD mutex API functions (`Dmod_Mutex_New`, `Dmod_Mutex_Delete`, `Dmod_Mutex_Lock`, `Dmod_Mutex_Unlock`) using DMOSI mutex functions. If you want to provide your own mutex implementation while still using other DMOD API implementations, set this option:
+
+```cmake
+set(DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX ON CACHE BOOL "Don't implement DMOD Mutex API" FORCE)
+```
+
+**Note:** The global `DMOSI_DONT_IMPLEMENT_DMOD_API` option takes precedence. If it's set to ON, all DMOD API implementations (including mutex) will be disabled regardless of the `DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX` setting.
+
 ## Building
 
 ### Build the library:
@@ -139,6 +149,15 @@ make
 mkdir build
 cd build
 cmake -DDMOSI_DONT_IMPLEMENT_DMOD_API=ON ..
+make
+```
+
+### Build with only DMOD Mutex API disabled:
+
+```bash
+mkdir build
+cd build
+cmake -DDMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX=ON ..
 make
 ```
 
