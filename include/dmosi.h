@@ -337,6 +337,13 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,           _thread_join,      (dmod_thread_t t
 DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_current,   (void) );
 
 /**
+ * @brief Get thread system
+ *
+ * @return dmod_thread_t Thread system handle, NULL if not supported
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_system,    (void) );
+
+/**
  * @brief Sleep for a specified time in milliseconds
  *
  * @param ms Time to sleep in milliseconds
