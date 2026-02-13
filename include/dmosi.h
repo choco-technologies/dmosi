@@ -3,8 +3,34 @@
 
 #include "dmod.h"
 
+/**
+ * @brief String used as the module name for the system allocations
+ */
+#define DMOSI_SYSTEM_MODULE_NAME    "system"
 
+//==============================================================================
+//                              Initialization API
+//==============================================================================
+
+/**
+ * @brief Initialize the DMOD OSI system
+ *
+ * This function initializes the DMOD OSI system and must be called before
+ * using any other DMOD OSI APIs.
+ *
+ * @return bool true on successful initialization, false on failure
+ */
 DMOD_BUILTIN_API( dmosi, 1.0, bool, _init,   (void) );
+
+/**
+ * @brief Deinitialize the DMOD OSI system
+ *
+ * This function deinitializes the DMOD OSI system and should be called when
+ * the system is no longer needed. After calling this function, no other DMOD
+ * OSI APIs should be used until _init is called again.
+ *
+ * @return bool true on successful deinitialization, false on failure
+ */
 DMOD_BUILTIN_API( dmosi, 1.0, bool, _deinit, (void) );
 
 //==============================================================================
