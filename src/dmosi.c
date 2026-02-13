@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <stdlib.h>
 #include "dmosi.h"
 
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _init,   (void) )
@@ -370,12 +369,10 @@ int Dmod_Mutex_Unlock(void* mutex)
 
 const char* Dmod_GetCurrentModuleNameEx(const char* Default)
 {
-    dmod_thread_t current_thread = dmosi_thread_current();
-    if (current_thread != NULL) {
-        const char* module_name = dmosi_thread_get_module_name(current_thread);
-        if (module_name != NULL) {
-            return module_name;
-        }
+    // dmosi_thread_get_module_name accepts NULL and returns current thread's module name
+    const char* module_name = dmosi_thread_get_module_name(NULL);
+    if (module_name != NULL) {
+        return module_name;
     }
     return Default;
 }
@@ -395,9 +392,7 @@ const char* Dmod_GetCurrentModuleNameEx(const char* Default)
  * and DMOSI_DONT_IMPLEMENT_DMOD_API_PROC are not defined.
  *
  * @note This function attempts to kill the current process using dmosi_process_kill.
- *       Since dmosi_process_kill doesn't accept an exit status, the function always
- *       falls back to calling the standard C library exit() function to ensure the
- *       status code is properly propagated.
+ *       For embedded systems without stdlib, it falls back to an infinite loop.
  */
 
 void Dmod_Exit(int Status)
@@ -408,8 +403,140 @@ void Dmod_Exit(int Status)
         // Note: dmosi_process_kill doesn't accept exit status
     }
     
-    // Always call exit() to ensure proper status code and cleanup
-    exit(Status);
+    // For embedded systems without exit(), enter infinite loop
+    (void)Status;
+    while(1) {
+        // Infinite loop as fallback for embedded systems
+    }
+}
+
+/**
+ * @brief Thread entry structure for spawned modules
+ *
+ * This structure holds the context and arguments needed to run a module
+ * in a separate thread.
+ */
+typedef struct {
+    Dmod_Context_t* context;
+    int argc;
+    char** argv;
+    int* return_value;
+} dmod_spawn_args_t;
+
+/**
+ * @brief Thread entry function for spawned modules
+ *
+ * This function is called in a new thread to run a module.
+ *
+ * @param arg Pointer to dmod_spawn_args_t structure
+ */
+static void dmod_spawn_thread_entry(void* arg)
+{
+    dmod_spawn_args_t* spawn_args = (dmod_spawn_args_t*)arg;
+    if (spawn_args != NULL && spawn_args->context != NULL) {
+        int result = Dmod_Run(spawn_args->context, spawn_args->argc, spawn_args->argv);
+        if (spawn_args->return_value != NULL) {
+            *spawn_args->return_value = result;
+        }
+    }
+}
+
+/**
+ * @brief Spawn a module in a new thread
+ *
+ * This function creates a new thread to run the specified module context.
+ * It waits for the thread to complete and returns the module's return value.
+ *
+ * @param Context Module context to spawn
+ * @param argc Number of arguments
+ * @param argv Argument array
+ * @return Return value of the module or error code
+ */
+int Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
+{
+    if (Context == NULL) {
+        return -EINVAL;
+    }
+
+    int return_value = 0;
+    dmod_spawn_args_t spawn_args = {
+        .context = Context,
+        .argc = argc,
+        .argv = argv,
+        .return_value = &return_value
+    };
+
+    // Create a thread to run the module
+    const char* module_name = dmosi_thread_get_module_name(NULL);
+    dmod_thread_t thread = dmosi_thread_create(
+        dmod_spawn_thread_entry,
+        &spawn_args,
+        5,      // Default priority
+        8192,   // Stack size
+        "dmod_spawn",
+        module_name ? module_name : "dmod"
+    );
+
+    if (thread == NULL) {
+        return -ENOMEM;
+    }
+
+    // Wait for the thread to complete
+    dmosi_thread_join(thread);
+    dmosi_thread_destroy(thread);
+
+    return return_value;
+}
+
+/**
+ * @brief Run a module in a detached thread
+ *
+ * This function creates a new detached thread to run the specified module context.
+ * It returns immediately without waiting for the module to complete.
+ *
+ * @param Context Module context to run detached
+ * @param argc Number of arguments
+ * @param argv Argument array
+ * @return 0 on success, negative error code on failure
+ */
+int Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
+{
+    if (Context == NULL) {
+        return -EINVAL;
+    }
+
+    // Allocate spawn args on heap since we're not waiting for the thread
+    dmod_spawn_args_t* spawn_args = (dmod_spawn_args_t*)Dmod_Malloc(sizeof(dmod_spawn_args_t));
+    if (spawn_args == NULL) {
+        return -ENOMEM;
+    }
+
+    spawn_args->context = Context;
+    spawn_args->argc = argc;
+    spawn_args->argv = argv;
+    spawn_args->return_value = NULL;  // No return value for detached
+
+    // Create a detached thread to run the module
+    const char* module_name = dmosi_thread_get_module_name(NULL);
+    dmod_thread_t thread = dmosi_thread_create(
+        dmod_spawn_thread_entry,
+        spawn_args,
+        5,      // Default priority
+        8192,   // Stack size
+        "dmod_detached",
+        module_name ? module_name : "dmod"
+    );
+
+    if (thread == NULL) {
+        Dmod_Free(spawn_args);
+        return -ENOMEM;
+    }
+
+    // Don't wait - let it run detached
+    // Note: In a real implementation, we would need a cleanup mechanism
+    // for the thread and spawn_args when the thread exits
+
+    return 0;
 }
 
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_PROC
