@@ -308,10 +308,11 @@ typedef void (*dmod_thread_entry_t)(void* arg);
  * @param arg Argument to pass to the entry function
  * @param priority Thread priority
  * @param stack_size Stack size for the thread
- * @param name Name of the thread (cannot be NULL)
+ * @param name              Name of the thread (cannot be NULL)
+ * @param module_name       Name of the module creating the thread (for tracking allocations)
  * @return dmod_thread_t Created thread handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name) );
 
 /**
  * @brief Destroy a thread
@@ -341,6 +342,22 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_current,   (void) );
  * @param ms Time to sleep in milliseconds
  */
 DMOD_BUILTIN_API( dmosi, 1.0, void,          _thread_sleep,     (uint32_t ms) );
+
+/**
+ * @brief Get thread name
+ *
+ * @param thread Thread handle
+ * @return const char* Thread name, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmod_thread_t thread) );
+
+/**
+ * @brief Get thread module name
+ *
+ * @param thread Thread handle
+ * @return const char* Module name that created the thread, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmod_thread_t thread) );
 
 /** @} */ // end of DMOSI_THREAD_API
 
