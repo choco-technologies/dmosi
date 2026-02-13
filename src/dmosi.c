@@ -404,6 +404,7 @@ void Dmod_Exit(int Status)
     }
     
     // For embedded systems without exit(), enter infinite loop
+    // Note: Status value is not used in embedded systems, but could be logged if needed
     (void)Status;
     while(1) {
         // Infinite loop as fallback for embedded systems
@@ -421,6 +422,7 @@ typedef struct {
     int argc;
     char** argv;
     int* return_value;
+    bool should_free;  // Flag indicating if this structure should be freed after use
 } dmod_spawn_args_t;
 
 /**
@@ -438,6 +440,11 @@ static void dmod_spawn_thread_entry(void* arg)
         if (spawn_args->return_value != NULL) {
             *spawn_args->return_value = result;
         }
+        
+        // Free the structure if it was heap-allocated (for detached threads)
+        if (spawn_args->should_free) {
+            Dmod_Free(spawn_args);
+        }
     }
 }
 
@@ -449,7 +456,7 @@ static void dmod_spawn_thread_entry(void* arg)
  *
  * @param Context Module context to spawn
  * @param argc Number of arguments
- * @param argv Argument array
+ * @param argv Argument array (must remain valid until function returns)
  * @return Return value of the module or error code
  */
 int Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
@@ -458,19 +465,24 @@ int Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
         return -EINVAL;
     }
 
+    // Heap allocate to avoid stack lifetime issues
+    dmod_spawn_args_t* spawn_args = (dmod_spawn_args_t*)Dmod_Malloc(sizeof(dmod_spawn_args_t));
+    if (spawn_args == NULL) {
+        return -ENOMEM;
+    }
+
     int return_value = 0;
-    dmod_spawn_args_t spawn_args = {
-        .context = Context,
-        .argc = argc,
-        .argv = argv,
-        .return_value = &return_value
-    };
+    spawn_args->context = Context;
+    spawn_args->argc = argc;
+    spawn_args->argv = argv;
+    spawn_args->return_value = &return_value;
+    spawn_args->should_free = false;  // We'll free it after join
 
     // Create a thread to run the module
     const char* module_name = dmosi_thread_get_module_name(NULL);
     dmod_thread_t thread = dmosi_thread_create(
         dmod_spawn_thread_entry,
-        &spawn_args,
+        spawn_args,
         5,      // Default priority
         8192,   // Stack size
         "dmod_spawn",
@@ -478,12 +490,16 @@ int Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
     );
 
     if (thread == NULL) {
+        Dmod_Free(spawn_args);
         return -ENOMEM;
     }
 
     // Wait for the thread to complete
     dmosi_thread_join(thread);
     dmosi_thread_destroy(thread);
+    
+    // Free spawn_args now that thread has completed
+    Dmod_Free(spawn_args);
 
     return return_value;
 }
@@ -496,8 +512,12 @@ int Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
  *
  * @param Context Module context to run detached
  * @param argc Number of arguments
- * @param argv Argument array
+ * @param argv Argument array (MUST remain valid for the lifetime of the module execution)
  * @return 0 on success, negative error code on failure
+ * 
+ * @warning The argv array and its contents must remain valid for the entire duration
+ *          of the module's execution since this function returns immediately while
+ *          the module runs in a detached thread.
  */
 int Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
 {
@@ -515,6 +535,7 @@ int Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
     spawn_args->argc = argc;
     spawn_args->argv = argv;
     spawn_args->return_value = NULL;  // No return value for detached
+    spawn_args->should_free = true;   // Thread will free this after completion
 
     // Create a detached thread to run the module
     const char* module_name = dmosi_thread_get_module_name(NULL);
@@ -533,8 +554,7 @@ int Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
     }
 
     // Don't wait - let it run detached
-    // Note: In a real implementation, we would need a cleanup mechanism
-    // for the thread and spawn_args when the thread exits
+    // The thread will free spawn_args when it completes
 
     return 0;
 }
