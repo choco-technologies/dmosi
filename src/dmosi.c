@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdlib.h>
 #include "dmosi.h"
 
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _init,   (void) )
@@ -393,20 +394,21 @@ const char* Dmod_GetCurrentModuleNameEx(const char* Default)
  * DMOSI process operations. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
  * and DMOSI_DONT_IMPLEMENT_DMOD_API_PROC are not defined.
  *
- * @note This function attempts to kill the current process. If no process API
- *       is available, it falls back to calling the standard C library exit() function.
+ * @note This function attempts to kill the current process using dmosi_process_kill.
+ *       Since dmosi_process_kill doesn't accept an exit status, the function always
+ *       falls back to calling the standard C library exit() function to ensure the
+ *       status code is properly propagated.
  */
-
-#include <stdlib.h>
 
 void Dmod_Exit(int Status)
 {
     dmod_process_t current_process = dmosi_process_current();
     if (current_process != NULL) {
         dmosi_process_kill(current_process);
+        // Note: dmosi_process_kill doesn't accept exit status
     }
     
-    // Fallback to standard exit if process API is not available or kill failed
+    // Always call exit() to ensure proper status code and cleanup
     exit(Status);
 }
 
