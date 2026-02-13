@@ -1,6 +1,10 @@
 #include <errno.h>
 #include "dmosi.h"
 
+// Default values for spawned processes
+#define DMOSI_DEFAULT_STACK_SIZE 1024
+#define DMOSI_DEFAULT_PRIORITY 0
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _init,   (void) )
 {
     return false;
@@ -111,12 +115,19 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_module_nam
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_get_priority,  (dmod_thread_t thread) )
+{
+    (void)thread;
+    return 0;
+}
+
 //==============================================================================
 //                              Process API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, dmod_process_t parent) )
 {
     (void)name;
+    (void)parent;
     return NULL;
 }
 
@@ -125,9 +136,10 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _process_destroy,   (dmod_pro
     (void)process;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_kill,      (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_kill,      (dmod_process_t process, int status) )
 {
     (void)process;
+    (void)status;
     return -ENOSYS;
 }
 
@@ -315,26 +327,26 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _timer_get_period, (dmosi
 //==============================================================================
 //                              DMOD Mutex API Implementation
 //==============================================================================
-#ifndef DMOSI_DONT_IMPLEMENT_DMOD_API
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX)
 
 /**
  * @brief DMOD mutex implementation using DMOSI
  *
  * This implementation provides the DMOD mutex API using the underlying
  * DMOSI mutex operations. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
- * is not defined.
+ * and DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX are not defined.
  *
  * @note These functions assume dmosi_mutex_t is pointer-compatible with void*.
  *       The opaque dmosi_mutex_t type is defined as 'struct dmosi_mutex*', which
  *       is safely castable to/from void*.
  */
 
-void* Dmod_Mutex_Create(bool recursive)
+void* Dmod_Mutex_New(bool recursive)
 {
     return (void*)dmosi_mutex_create(recursive);
 }
 
-void Dmod_Mutex_Destroy(void* mutex)
+void Dmod_Mutex_Delete(void* mutex)
 {
     dmosi_mutex_destroy((dmosi_mutex_t)mutex);
 }
@@ -349,5 +361,237 @@ int Dmod_Mutex_Unlock(void* mutex)
     return dmosi_mutex_unlock((dmosi_mutex_t)mutex);
 }
 
-#endif // DMOSI_DONT_IMPLEMENT_DMOD_API
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX
+
+//==============================================================================
+//                              DMOD Environment API Implementation
+//==============================================================================
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_ENV)
+
+/**
+ * @brief DMOD environment API implementation using DMOSI
+ *
+ * This implementation provides the DMOD GetCurrentModuleNameEx API using the 
+ * underlying DMOSI thread operations. It is only compiled when 
+ * DMOSI_DONT_IMPLEMENT_DMOD_API and DMOSI_DONT_IMPLEMENT_DMOD_API_ENV are not defined.
+ *
+ * @note This function gets the module name from the current thread. If no current
+ *       thread is available or it has no module name, it returns the provided default.
+ */
+
+const char* Dmod_GetCurrentModuleNameEx(const char* Default)
+{
+    // dmosi_thread_get_module_name accepts NULL and returns current thread's module name
+    const char* module_name = dmosi_thread_get_module_name(NULL);
+    if (module_name != NULL) {
+        return module_name;
+    }
+    return Default;
+}
+
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_ENV
+
+//==============================================================================
+//                              DMOD Process API Implementation
+//==============================================================================
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_PROC)
+
+/**
+ * @brief DMOD process API implementation using DMOSI
+ *
+ * This implementation provides the DMOD Exit API using the underlying
+ * DMOSI process operations. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
+ * and DMOSI_DONT_IMPLEMENT_DMOD_API_PROC are not defined.
+ *
+ * @note This function attempts to kill the current process using dmosi_process_kill.
+ *       For embedded systems without stdlib, it falls back to an infinite loop.
+ */
+
+void Dmod_Exit(int Status)
+{
+    dmod_process_t current_process = dmosi_process_current();
+    if (current_process != NULL) {
+        dmosi_process_kill(current_process, Status);
+    }
+    
+    // Log that the process is exiting
+    DMOD_LOG_VERBOSE("Process exiting with status %d\n", Status);
+    
+    // For embedded systems without exit(), enter infinite loop
+    // Note: Status value is passed to dmosi_process_kill if available
+    while(1) {
+        // Infinite loop as fallback for embedded systems
+    }
+}
+
+/**
+ * @brief Thread entry structure for spawned modules
+ *
+ * This structure holds the context and arguments needed to run a module
+ * in a separate thread.
+ */
+typedef struct {
+    Dmod_Context_t* context;
+    int argc;
+    char** argv;
+    dmod_process_t process;  // Process handle for this spawn
+} dmod_spawn_args_t;
+
+/**
+ * @brief Thread entry function for spawned modules
+ *
+ * This function is called in a new thread to run a module.
+ *
+ * @param arg Pointer to dmod_spawn_args_t structure
+ */
+static void dmod_spawn_thread_entry(void* arg)
+{
+    dmod_spawn_args_t* spawn_args = arg;
+    if (spawn_args != NULL && spawn_args->context != NULL) {
+        // Run the module and get result
+        int result = Dmod_Run(spawn_args->context, spawn_args->argc, spawn_args->argv);
+        
+        // Free the structure before exiting (Exit never returns)
+        Dmod_Free(spawn_args);
+        
+        // Exit the process with the result code
+        // This allows Dmod_GetProcessResult to retrieve the exit status
+        Dmod_Exit(result);
+    }
+}
+
+/**
+ * @brief Helper function to spawn a module in a new process/thread
+ *
+ * This internal function handles the common logic for both Spawn and RunDetached.
+ *
+ * @param Context Module context to spawn
+ * @param argc Number of arguments
+ * @param argv Argument array
+ * @param parent Parent process (NULL for detached, current for spawn)
+ * @return Dmod_Pid_t Process ID on success, negative error code on failure
+ */
+static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, char* argv[], dmod_process_t parent)
+{
+    if (Context == NULL) {
+        DMOD_LOG_ERROR("Failed to spawn module: Context is NULL\n");
+        return -EINVAL;
+    }
+
+    // Get module name from Context - it's an error if not available
+    const char* module_name = Dmod_GetName(Context);
+    if (module_name == NULL) {
+        DMOD_LOG_ERROR("Failed to spawn module: module name is NULL\n");
+        return -EINVAL;
+    }
+
+    // Create a process
+    dmod_process_t new_process = dmosi_process_create(module_name, parent);
+    if (new_process == NULL) {
+        DMOD_LOG_ERROR("Failed to create process for module '%s'\n", module_name);
+        return -ENOMEM;
+    }
+
+    // Get process ID
+    dmod_process_id_t pid = dmosi_process_get_id(new_process);
+
+    // Allocate spawn args on heap using MallocEx for better tracking
+    // Note: We create the process first to get the PID, then allocate spawn_args.
+    // If allocation fails, we properly clean up the process before returning.
+    dmod_spawn_args_t* spawn_args = Dmod_MallocEx(sizeof(dmod_spawn_args_t), module_name);
+    if (spawn_args == NULL) {
+        DMOD_LOG_ERROR("Failed to allocate spawn args for module '%s'\n", module_name);
+        dmosi_process_destroy(new_process);
+        return -ENOMEM;
+    }
+
+    spawn_args->context = Context;
+    spawn_args->argc = argc;
+    spawn_args->argv = argv;
+    spawn_args->process = new_process;
+
+    // Get stack size from Context header
+    uint64_t stack_size = Dmod_GetStackSize(Context);
+    if (stack_size == 0) {
+        stack_size = DMOSI_DEFAULT_STACK_SIZE;
+    }
+
+    // Inherit priority from current thread
+    int priority = dmosi_thread_get_priority(NULL);
+    if (priority == 0) {
+        priority = DMOSI_DEFAULT_PRIORITY;
+    }
+
+    // Create a thread to run the module
+    // Both name and module_name parameters use the spawned module's name since
+    // the thread is part of the new process/module, not the parent.
+    // This ensures proper tracking and identification of the thread.
+    dmod_thread_t thread = dmosi_thread_create(
+        dmod_spawn_thread_entry,
+        spawn_args,
+        priority,
+        (size_t)stack_size,
+        module_name,  // Thread name: identifies the thread
+        module_name   // Module name: for allocation tracking
+    );
+
+    if (thread == NULL) {
+        DMOD_LOG_ERROR("Failed to create thread for module '%s'\n", module_name);
+        Dmod_Free(spawn_args);
+        dmosi_process_destroy(new_process);
+        return -ENOMEM;
+    }
+
+    // Add thread to process
+    dmosi_process_add_thread(new_process, thread);
+
+    // Return PID immediately without waiting
+    return (Dmod_Pid_t)pid;
+}
+
+/**
+ * @brief Spawn a module in a new process/thread
+ *
+ * This function creates a new process and thread to run the specified module context.
+ * It returns immediately with the process ID, without waiting for completion.
+ *
+ * @param Context Module context to spawn
+ * @param argc Number of arguments
+ * @param argv Argument array (MUST remain valid for the lifetime of the module execution)
+ * @return Dmod_Pid_t Process ID on success, negative error code on failure
+ * 
+ * @warning The argv array and its contents must remain valid for the entire duration
+ *          of the module's execution.
+ */
+Dmod_Pid_t Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
+{
+    // Spawn with current process as parent
+    dmod_process_t current_process = dmosi_process_current();
+    return dmod_spawn_module_internal(Context, argc, argv, current_process);
+}
+
+/**
+ * @brief Run a module in a detached process/thread
+ *
+ * This function creates a new detached process and thread to run the specified module context.
+ * It returns immediately with the process ID, without waiting for completion.
+ * The process has no parent.
+ *
+ * @param Context Module context to run detached
+ * @param argc Number of arguments
+ * @param argv Argument array (MUST remain valid for the lifetime of the module execution)
+ * @return Dmod_Pid_t Process ID on success, negative error code on failure
+ * 
+ * @warning The argv array and its contents must remain valid for the entire duration
+ *          of the module's execution since this function returns immediately while
+ *          the module runs in a detached process/thread.
+ */
+Dmod_Pid_t Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
+{
+    // Spawn with NULL parent (detached)
+    return dmod_spawn_module_internal(Context, argc, argv, NULL);
+}
+
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_PROC
+
 

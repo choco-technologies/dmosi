@@ -12,6 +12,9 @@ project(dmosi
     LANGUAGES C CXX)
 
 set(DMOSI_DONT_IMPLEMENT_DMOD_API OFF CACHE BOOL "Do not implement DMOD API in dmosi library")
+set(DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX OFF CACHE BOOL "Do not implement DMOD Mutex API in dmosi library")
+set(DMOSI_DONT_IMPLEMENT_DMOD_API_ENV OFF CACHE BOOL "Do not implement DMOD Environment API in dmosi library")
+set(DMOSI_DONT_IMPLEMENT_DMOD_API_PROC OFF CACHE BOOL "Do not implement DMOD Process API in dmosi library")
 
 
 # ======================================================================
@@ -58,6 +61,9 @@ add_library(${MODULE_NAME} STATIC
 target_compile_definitions(${MODULE_NAME} 
     PRIVATE 
         $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API}>:DMOSI_DONT_IMPLEMENT_DMOD_API>
+        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX}>:DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX>
+        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_ENV}>:DMOSI_DONT_IMPLEMENT_DMOD_API_ENV>
+        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_PROC}>:DMOSI_DONT_IMPLEMENT_DMOD_API_PROC>
         DMOSI_VERSION="${PROJECT_VERSION}"
 )
 

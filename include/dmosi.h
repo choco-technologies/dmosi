@@ -150,9 +150,10 @@ typedef enum {
  * Creates a new process container. The process is a container for threads.
  *
  * @param name Name of the process (can be NULL)
+ * @param parent Parent process (can be NULL for detached processes)
  * @return dmod_process_t Created process handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, dmod_process_t parent) );
 
 /**
  * @brief Destroy a process
@@ -167,9 +168,10 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,           _process_destroy,   (dmod_process_
  * Forcefully terminate a process and all its threads.
  *
  * @param process Process handle to kill
+ * @param status Exit status code
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_kill,      (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_kill,      (dmod_process_t process, int status) );
 
 /**
  * @brief Wait for a process to terminate
@@ -384,6 +386,14 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmod_thread_t t
  * @return const char* Module name that created the thread, NULL on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmod_thread_t thread) );
+
+/**
+ * @brief Get thread priority
+ *
+ * @param thread Thread handle (if NULL, returns priority of current thread)
+ * @return int Thread priority, or 0 on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,  _thread_get_priority,  (dmod_thread_t thread) );
 
 /** @} */ // end of DMOSI_THREAD_API
 
