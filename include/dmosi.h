@@ -354,7 +354,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmod_thread_t t
 /**
  * @brief Get thread module name
  *
- * @param thread Thread handle
+ * @param thread Thread handle (if NULL, returns module name of current thread)
  * @return const char* Module name that created the thread, NULL on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmod_thread_t thread) );
