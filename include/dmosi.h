@@ -346,7 +346,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,          _thread_sleep,     (uint32_t ms) );
 /**
  * @brief Get thread name
  *
- * @param thread Thread handle
+ * @param thread Thread handle (if NULL, returns name of current thread)
  * @return const char* Thread name, NULL on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmod_thread_t thread) );
