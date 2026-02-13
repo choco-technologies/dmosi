@@ -265,33 +265,6 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_pwd,   (dmod_process_
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmod_process_t process) );
 
 /**
- * @brief Add a thread to a process
- *
- * @param process Process handle
- * @param thread Thread handle to add
- * @return int 0 on success, negative error code on failure
- */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_add_thread,    (dmod_process_t process, dmod_thread_t thread) );
-
-/**
- * @brief Remove a thread from a process
- *
- * @param process Process handle
- * @param thread Thread handle to remove
- * @return int 0 on success, negative error code on failure
- */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_remove_thread, (dmod_process_t process, dmod_thread_t thread) );
-
-/**
- * @brief Check if a process contains a thread
- *
- * @param process Process handle
- * @param thread Thread handle to check
- * @return bool true if process contains the thread, false otherwise
- */
-DMOD_BUILTIN_API( dmosi, 1.0, bool,           _process_has_thread,    (dmod_process_t process, dmod_thread_t thread) );
-
-/**
  * @brief Find a process by name
  *
  * @param name Process name to search for
@@ -338,9 +311,10 @@ typedef void (*dmod_thread_entry_t)(void* arg);
  * @param stack_size Stack size for the thread
  * @param name              Name of the thread (cannot be NULL)
  * @param module_name       Name of the module creating the thread (for tracking allocations)
+ * @param process           Process to associate the thread with (NULL = current process)
  * @return dmod_thread_t Created thread handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name, dmod_process_t process) );
 
 /**
  * @brief Destroy a thread
@@ -394,6 +368,14 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmod_thre
  * @return int Thread priority, or 0 on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, int,  _thread_get_priority,  (dmod_thread_t thread) );
+
+/**
+ * @brief Get thread's associated process
+ *
+ * @param thread Thread handle (if NULL, returns process of current thread)
+ * @return dmod_process_t Process handle that the thread belongs to, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _thread_get_process, (dmod_thread_t thread) );
 
 /** @} */ // end of DMOSI_THREAD_API
 
