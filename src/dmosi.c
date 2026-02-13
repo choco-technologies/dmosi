@@ -122,6 +122,12 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_get_priority,  (dmod_t
     return 0;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _thread_get_process, (dmod_thread_t thread) )
+{
+    (void)thread;
+    return NULL;
+}
+
 //==============================================================================
 //                              Process API
 //==============================================================================
@@ -211,27 +217,6 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (d
 {
     (void)process;
     return NULL;
-}
-
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_add_thread,    (dmod_process_t process, dmod_thread_t thread) )
-{
-    (void)process;
-    (void)thread;
-    return -ENOSYS;
-}
-
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_remove_thread, (dmod_process_t process, dmod_thread_t thread) )
-{
-    (void)process;
-    (void)thread;
-    return -ENOSYS;
-}
-
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _process_has_thread,    (dmod_process_t process, dmod_thread_t thread) )
-{
-    (void)process;
-    (void)thread;
-    return false;
 }
 
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_find_by_name, (const char* name) )
@@ -543,9 +528,6 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
         dmosi_process_destroy(new_process);
         return -ENOMEM;
     }
-
-    // Add thread to process
-    dmosi_process_add_thread(new_process, thread);
 
     // Return PID immediately without waiting
     return (Dmod_Pid_t)pid;
