@@ -67,12 +67,14 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_post,    (dmosi_sem
 //==============================================================================
 //                              Thread API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name) )
 {
     (void)entry;
     (void)arg;
     (void)priority;
     (void)stack_size;
+    (void)name;
+    (void)module_name;
     return NULL;
 }
 
@@ -95,6 +97,18 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_current,   (
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _thread_sleep,     (uint32_t ms) )
 {
     (void)ms;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_name,  (dmod_thread_t thread) )
+{
+    (void)thread;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_module_name,  (dmod_thread_t thread) )
+{
+    (void)thread;
+    return NULL;
 }
 
 //==============================================================================
@@ -305,11 +319,11 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _timer_get_period, (dmosi
 
 /**
  * @brief DMOD mutex implementation using DMOSI
- * 
+ *
  * This implementation provides the DMOD mutex API using the underlying
  * DMOSI mutex operations. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
  * is not defined.
- * 
+ *
  * @note These functions assume dmosi_mutex_t is pointer-compatible with void*.
  *       The opaque dmosi_mutex_t type is defined as 'struct dmosi_mutex*', which
  *       is safely castable to/from void*.
