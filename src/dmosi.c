@@ -2,8 +2,8 @@
 #include "dmosi.h"
 
 // Default values for spawned processes
-#define DMOSI_DEFAULT_PRIORITY 0
 #define DMOSI_DEFAULT_STACK_SIZE 1024
+#define DMOSI_DEFAULT_PRIORITY 0
 
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _init,   (void) )
 {
@@ -414,8 +414,8 @@ void Dmod_Exit(int Status)
         dmosi_process_kill(current_process, Status);
     }
     
-    // Log that the process is exiting from main thread
-    DMOD_LOG_VERBOSE("Process exiting from main thread with status %d\n", Status);
+    // Log that the process is exiting
+    DMOD_LOG_VERBOSE("Process exiting with status %d\n", Status);
     
     // For embedded systems without exit(), enter infinite loop
     // Note: Status value is passed to dmosi_process_kill if available
