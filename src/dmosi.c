@@ -111,12 +111,19 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_module_nam
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_get_priority,  (dmod_thread_t thread) )
+{
+    (void)thread;
+    return 0;
+}
+
 //==============================================================================
 //                              Process API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, dmod_process_t parent) )
 {
     (void)name;
+    (void)parent;
     return NULL;
 }
 
@@ -125,9 +132,10 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _process_destroy,   (dmod_pro
     (void)process;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_kill,      (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_kill,      (dmod_process_t process, int status) )
 {
     (void)process;
+    (void)status;
     return -ENOSYS;
 }
 
@@ -399,13 +407,11 @@ void Dmod_Exit(int Status)
 {
     dmod_process_t current_process = dmosi_process_current();
     if (current_process != NULL) {
-        dmosi_process_kill(current_process);
-        // Note: dmosi_process_kill doesn't accept exit status
+        dmosi_process_kill(current_process, Status);
     }
     
     // For embedded systems without exit(), enter infinite loop
-    // Note: Status value is not used in embedded systems, but could be logged if needed
-    (void)Status;
+    // Note: Status value is passed to dmosi_process_kill if available
     while(1) {
         // Infinite loop as fallback for embedded systems
     }
@@ -421,8 +427,7 @@ typedef struct {
     Dmod_Context_t* context;
     int argc;
     char** argv;
-    int* return_value;
-    bool should_free;  // Flag indicating if this structure should be freed after use
+    dmod_process_t process;  // Process handle for this spawn
 } dmod_spawn_args_t;
 
 /**
@@ -434,129 +439,185 @@ typedef struct {
  */
 static void dmod_spawn_thread_entry(void* arg)
 {
-    dmod_spawn_args_t* spawn_args = (dmod_spawn_args_t*)arg;
+    dmod_spawn_args_t* spawn_args = arg;
     if (spawn_args != NULL && spawn_args->context != NULL) {
         int result = Dmod_Run(spawn_args->context, spawn_args->argc, spawn_args->argv);
-        if (spawn_args->return_value != NULL) {
-            *spawn_args->return_value = result;
-        }
         
-        // Free the structure if it was heap-allocated (for detached threads)
-        if (spawn_args->should_free) {
-            Dmod_Free(spawn_args);
-        }
+        // Store result in process (could be extended to store exit code)
+        (void)result;
+        
+        // Free the structure after execution
+        Dmod_Free(spawn_args);
     }
 }
 
 /**
- * @brief Spawn a module in a new thread
+ * @brief Spawn a module in a new process/thread
  *
- * This function creates a new thread to run the specified module context.
- * It waits for the thread to complete and returns the module's return value.
+ * This function creates a new process and thread to run the specified module context.
+ * It returns immediately with the process ID, without waiting for completion.
  *
  * @param Context Module context to spawn
  * @param argc Number of arguments
- * @param argv Argument array (must remain valid until function returns)
- * @return Return value of the module or error code
+ * @param argv Argument array (MUST remain valid for the lifetime of the module execution)
+ * @return Dmod_Pid_t Process ID on success, negative error code on failure
+ * 
+ * @warning The argv array and its contents must remain valid for the entire duration
+ *          of the module's execution.
  */
-int Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
+Dmod_Pid_t Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
 {
     if (Context == NULL) {
         return -EINVAL;
     }
 
-    // Heap allocate to avoid stack lifetime issues
-    dmod_spawn_args_t* spawn_args = (dmod_spawn_args_t*)Dmod_Malloc(sizeof(dmod_spawn_args_t));
-    if (spawn_args == NULL) {
+    // Get module name from Context
+    const char* module_name = Dmod_GetName(Context);
+    if (module_name == NULL) {
+        module_name = "unknown";
+    }
+
+    // Create a process with current process as parent
+    dmod_process_t current_process = dmosi_process_current();
+    dmod_process_t new_process = dmosi_process_create(module_name, current_process);
+    if (new_process == NULL) {
         return -ENOMEM;
     }
 
-    int return_value = 0;
+    // Get process ID
+    dmod_process_id_t pid = dmosi_process_get_id(new_process);
+
+    // Allocate spawn args on heap
+    dmod_spawn_args_t* spawn_args = Dmod_Malloc(sizeof(dmod_spawn_args_t));
+    if (spawn_args == NULL) {
+        dmosi_process_destroy(new_process);
+        return -ENOMEM;
+    }
+
     spawn_args->context = Context;
     spawn_args->argc = argc;
     spawn_args->argv = argv;
-    spawn_args->return_value = &return_value;
-    spawn_args->should_free = false;  // We'll free it after join
+    spawn_args->process = new_process;
+
+    // Get stack size from Context header
+    uint64_t stack_size = Dmod_GetStackSize(Context);
+    if (stack_size == 0) {
+        stack_size = 8192;  // Default fallback
+    }
+
+    // Inherit priority from current thread
+    int priority = dmosi_thread_get_priority(NULL);
+    if (priority == 0) {
+        priority = 5;  // Default fallback
+    }
 
     // Create a thread to run the module
-    const char* module_name = dmosi_thread_get_module_name(NULL);
+    const char* current_module = dmosi_thread_get_module_name(NULL);
     dmod_thread_t thread = dmosi_thread_create(
         dmod_spawn_thread_entry,
         spawn_args,
-        5,      // Default priority
-        8192,   // Stack size
-        "dmod_spawn",
-        module_name ? module_name : "dmod"
+        priority,
+        (size_t)stack_size,
+        module_name,
+        current_module ? current_module : "dmod"
     );
 
     if (thread == NULL) {
         Dmod_Free(spawn_args);
+        dmosi_process_destroy(new_process);
         return -ENOMEM;
     }
 
-    // Wait for the thread to complete
-    dmosi_thread_join(thread);
-    dmosi_thread_destroy(thread);
-    
-    // Free spawn_args now that thread has completed
-    Dmod_Free(spawn_args);
+    // Add thread to process
+    dmosi_process_add_thread(new_process, thread);
 
-    return return_value;
+    // Return PID immediately without waiting
+    return (Dmod_Pid_t)pid;
 }
 
 /**
- * @brief Run a module in a detached thread
+ * @brief Run a module in a detached process/thread
  *
- * This function creates a new detached thread to run the specified module context.
- * It returns immediately without waiting for the module to complete.
+ * This function creates a new detached process and thread to run the specified module context.
+ * It returns immediately with the process ID, without waiting for completion.
+ * The process has no parent.
  *
  * @param Context Module context to run detached
  * @param argc Number of arguments
  * @param argv Argument array (MUST remain valid for the lifetime of the module execution)
- * @return 0 on success, negative error code on failure
+ * @return Dmod_Pid_t Process ID on success, negative error code on failure
  * 
  * @warning The argv array and its contents must remain valid for the entire duration
  *          of the module's execution since this function returns immediately while
- *          the module runs in a detached thread.
+ *          the module runs in a detached process/thread.
  */
-int Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
+Dmod_Pid_t Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
 {
     if (Context == NULL) {
         return -EINVAL;
     }
 
-    // Allocate spawn args on heap since we're not waiting for the thread
-    dmod_spawn_args_t* spawn_args = (dmod_spawn_args_t*)Dmod_Malloc(sizeof(dmod_spawn_args_t));
+    // Get module name from Context
+    const char* module_name = Dmod_GetName(Context);
+    if (module_name == NULL) {
+        module_name = "unknown";
+    }
+
+    // Create a detached process (parent is NULL)
+    dmod_process_t new_process = dmosi_process_create(module_name, NULL);
+    if (new_process == NULL) {
+        return -ENOMEM;
+    }
+
+    // Get process ID
+    dmod_process_id_t pid = dmosi_process_get_id(new_process);
+
+    // Allocate spawn args on heap - thread will free this
+    dmod_spawn_args_t* spawn_args = Dmod_Malloc(sizeof(dmod_spawn_args_t));
     if (spawn_args == NULL) {
+        dmosi_process_destroy(new_process);
         return -ENOMEM;
     }
 
     spawn_args->context = Context;
     spawn_args->argc = argc;
     spawn_args->argv = argv;
-    spawn_args->return_value = NULL;  // No return value for detached
-    spawn_args->should_free = true;   // Thread will free this after completion
+    spawn_args->process = new_process;
+
+    // Get stack size from Context header
+    uint64_t stack_size = Dmod_GetStackSize(Context);
+    if (stack_size == 0) {
+        stack_size = 8192;  // Default fallback
+    }
+
+    // Inherit priority from current thread
+    int priority = dmosi_thread_get_priority(NULL);
+    if (priority == 0) {
+        priority = 5;  // Default fallback
+    }
 
     // Create a detached thread to run the module
-    const char* module_name = dmosi_thread_get_module_name(NULL);
+    const char* current_module = dmosi_thread_get_module_name(NULL);
     dmod_thread_t thread = dmosi_thread_create(
         dmod_spawn_thread_entry,
         spawn_args,
-        5,      // Default priority
-        8192,   // Stack size
-        "dmod_detached",
-        module_name ? module_name : "dmod"
+        priority,
+        (size_t)stack_size,
+        module_name,
+        current_module ? current_module : "dmod"
     );
 
     if (thread == NULL) {
         Dmod_Free(spawn_args);
+        dmosi_process_destroy(new_process);
         return -ENOMEM;
     }
 
-    // Don't wait - let it run detached
-    // The thread will free spawn_args when it completes
+    // Add thread to process
+    dmosi_process_add_thread(new_process, thread);
 
-    return 0;
+    // Return PID immediately without waiting
+    return (Dmod_Pid_t)pid;
 }
 
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_PROC
