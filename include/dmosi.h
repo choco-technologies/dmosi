@@ -67,7 +67,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,           _mutex_unlock,    (dmosi_mutex_t mu
 //==============================================================================
 /**
  * @brief Forward declaration for thread type
- * 
+ *
  * This forward declaration allows Process API to reference threads
  * before the Thread API section.
  */
@@ -79,7 +79,7 @@ typedef struct dmod_thread* dmod_thread_t;
 /**
  * @defgroup DMOSI_PROCESS_API Process API
  * @brief API for process operations in DMOD OSI
- * 
+ *
  * Processes are containers for threads. This API provides functions to create
  * and manage processes, including state management, thread management, and
  * process identification.
@@ -91,7 +91,7 @@ typedef struct dmod_thread* dmod_thread_t;
  *
  * This type represents a process in the DMOD OSI system.
  * A process is a container for threads and has its own state, ID, and properties.
- * 
+ *
  * @note The actual implementation of the process is hidden
  * from the user and is specific to the underlying OS.
  */
@@ -293,10 +293,10 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_find_by_id,   (dmod_proce
 
 /**
  * @brief Thread entry function type
- * 
+ *
  * This is the signature for thread entry functions. The function receives
  * a user-provided argument.
- * 
+ *
  * @param arg User-provided argument passed to the thread
  */
 typedef void (*dmod_thread_entry_t)(void* arg);
@@ -308,9 +308,10 @@ typedef void (*dmod_thread_entry_t)(void* arg);
  * @param arg Argument to pass to the entry function
  * @param priority Thread priority
  * @param stack_size Stack size for the thread
+ * @param name Name of the thread (cannot be NULL)
  * @return dmod_thread_t Created thread handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name) );
 
 /**
  * @brief Destroy a thread
@@ -478,13 +479,13 @@ typedef struct dmosi_timer* dmosi_timer_t;
 
 /**
  * @brief Timer callback function type
- * 
+ *
  * This callback is invoked when the timer expires. For auto-reload timers,
  * it is called periodically at the specified interval. For one-shot timers,
  * it is called once when the timer expires.
- * 
+ *
  * @param arg User-provided argument passed to the callback
- * 
+ *
  * @note The callback is typically executed in timer/interrupt context.
  *       Keep the callback short and avoid blocking operations.
  */
