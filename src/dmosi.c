@@ -490,6 +490,8 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     dmod_process_id_t pid = dmosi_process_get_id(new_process);
 
     // Allocate spawn args on heap using MallocEx for better tracking
+    // Note: We create the process first to get the PID, then allocate spawn_args.
+    // If allocation fails, we properly clean up the process before returning.
     dmod_spawn_args_t* spawn_args = Dmod_MallocEx(sizeof(dmod_spawn_args_t), module_name);
     if (spawn_args == NULL) {
         dmosi_process_destroy(new_process);
@@ -514,14 +516,16 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     }
 
     // Create a thread to run the module
-    // Use the module name from Context as the module_name parameter
+    // Both name and module_name parameters use the spawned module's name since
+    // the thread is part of the new process/module, not the parent.
+    // This ensures proper tracking and identification of the thread.
     dmod_thread_t thread = dmosi_thread_create(
         dmod_spawn_thread_entry,
         spawn_args,
         priority,
         (size_t)stack_size,
-        module_name,
-        module_name
+        module_name,  // Thread name: identifies the thread
+        module_name   // Module name: for allocation tracking
     );
 
     if (thread == NULL) {
