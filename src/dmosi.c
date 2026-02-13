@@ -2,8 +2,8 @@
 #include "dmosi.h"
 
 // Default values for spawned processes
-#define DMOD_DEFAULT_STACK_SIZE 8192
-#define DMOD_DEFAULT_PRIORITY 5
+#define DMOSI_DEFAULT_PRIORITY 0
+#define DMOSI_DEFAULT_STACK_SIZE 1024
 
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _init,   (void) )
 {
@@ -414,6 +414,9 @@ void Dmod_Exit(int Status)
         dmosi_process_kill(current_process, Status);
     }
     
+    // Log that the process is exiting from main thread
+    DMOD_LOG_VERBOSE("Process exiting from main thread with status %d\n", Status);
+    
     // For embedded systems without exit(), enter infinite loop
     // Note: Status value is passed to dmosi_process_kill if available
     while(1) {
@@ -471,18 +474,21 @@ static void dmod_spawn_thread_entry(void* arg)
 static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, char* argv[], dmod_process_t parent)
 {
     if (Context == NULL) {
+        DMOD_LOG_ERROR("Failed to spawn module: Context is NULL\n");
         return -EINVAL;
     }
 
     // Get module name from Context - it's an error if not available
     const char* module_name = Dmod_GetName(Context);
     if (module_name == NULL) {
+        DMOD_LOG_ERROR("Failed to spawn module: module name is NULL\n");
         return -EINVAL;
     }
 
     // Create a process
     dmod_process_t new_process = dmosi_process_create(module_name, parent);
     if (new_process == NULL) {
+        DMOD_LOG_ERROR("Failed to create process for module '%s'\n", module_name);
         return -ENOMEM;
     }
 
@@ -494,6 +500,7 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     // If allocation fails, we properly clean up the process before returning.
     dmod_spawn_args_t* spawn_args = Dmod_MallocEx(sizeof(dmod_spawn_args_t), module_name);
     if (spawn_args == NULL) {
+        DMOD_LOG_ERROR("Failed to allocate spawn args for module '%s'\n", module_name);
         dmosi_process_destroy(new_process);
         return -ENOMEM;
     }
@@ -506,13 +513,13 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     // Get stack size from Context header
     uint64_t stack_size = Dmod_GetStackSize(Context);
     if (stack_size == 0) {
-        stack_size = DMOD_DEFAULT_STACK_SIZE;
+        stack_size = DMOSI_DEFAULT_STACK_SIZE;
     }
 
     // Inherit priority from current thread
     int priority = dmosi_thread_get_priority(NULL);
     if (priority == 0) {
-        priority = DMOD_DEFAULT_PRIORITY;
+        priority = DMOSI_DEFAULT_PRIORITY;
     }
 
     // Create a thread to run the module
@@ -529,6 +536,7 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     );
 
     if (thread == NULL) {
+        DMOD_LOG_ERROR("Failed to create thread for module '%s'\n", module_name);
         Dmod_Free(spawn_args);
         dmosi_process_destroy(new_process);
         return -ENOMEM;
