@@ -338,9 +338,10 @@ typedef void (*dmod_thread_entry_t)(void* arg);
  * @param stack_size Stack size for the thread
  * @param name              Name of the thread (cannot be NULL)
  * @param module_name       Name of the module creating the thread (for tracking allocations)
+ * @param process           Process to associate the thread with (NULL = current process)
  * @return dmod_thread_t Created thread handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name, dmod_process_t process) );
 
 /**
  * @brief Destroy a thread

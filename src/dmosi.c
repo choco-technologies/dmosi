@@ -71,7 +71,7 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_post,    (dmosi_sem
 //==============================================================================
 //                              Thread API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name, dmod_process_t process) )
 {
     (void)entry;
     (void)arg;
@@ -79,6 +79,7 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (
     (void)stack_size;
     (void)name;
     (void)module_name;
+    (void)process;
     return NULL;
 }
 
@@ -532,7 +533,8 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
         priority,
         (size_t)stack_size,
         module_name,  // Thread name: identifies the thread
-        module_name   // Module name: for allocation tracking
+        module_name,  // Module name: for allocation tracking
+        new_process   // Process: associate thread with the new process
     );
 
     if (thread == NULL) {

@@ -99,12 +99,15 @@ void my_task(void)
     // Unlock the mutex
     dmosi_mutex_unlock(mutex);
     
-    // Create a thread
+    // Create a thread (associated with current process)
     dmosi_thread_t thread = dmosi_thread_create(
         my_thread_function,
         NULL,           // argument
         5,              // priority
-        2048            // stack size
+        2048,           // stack size
+        "my_thread",    // thread name
+        "my_module",    // module name
+        NULL            // process (NULL = current process)
     );
     
     // Clean up
