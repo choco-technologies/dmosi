@@ -116,7 +116,7 @@ void my_task(void)
 
 ### DMOSI_DONT_IMPLEMENT_DMOD_API
 
-By default, DMOSI provides implementations of DMOD mutex API functions (`Dmod_Mutex_*`) that call the corresponding `dmosi_mutex_*` functions. If you want to provide your own implementation or don't need this bridge, set this option:
+By default, DMOSI provides implementations of several DMOD SAL API functions that call the corresponding `dmosi_*` functions. If you want to provide your own implementation or don't need this bridge, set this option:
 
 ```cmake
 set(DMOSI_DONT_IMPLEMENT_DMOD_API ON CACHE BOOL "Don't implement DMOD API" FORCE)
@@ -130,7 +130,23 @@ This option provides more granular control over the DMOD API implementation. By 
 set(DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX ON CACHE BOOL "Don't implement DMOD Mutex API" FORCE)
 ```
 
-**Note:** The global `DMOSI_DONT_IMPLEMENT_DMOD_API` option takes precedence. If it's set to ON, all DMOD API implementations (including mutex) will be disabled regardless of the `DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX` setting.
+### DMOSI_DONT_IMPLEMENT_DMOD_API_ENV
+
+By default, DMOSI implements the DMOD environment API function `Dmod_GetCurrentModuleNameEx` using DMOSI thread functions (`dmosi_thread_current` and `dmosi_thread_get_module_name`). If you want to provide your own implementation, set this option:
+
+```cmake
+set(DMOSI_DONT_IMPLEMENT_DMOD_API_ENV ON CACHE BOOL "Don't implement DMOD Environment API" FORCE)
+```
+
+### DMOSI_DONT_IMPLEMENT_DMOD_API_PROC
+
+By default, DMOSI implements the DMOD process API function `Dmod_Exit` using DMOSI process functions (`dmosi_process_current` and `dmosi_process_kill`), with a fallback to the standard C library `exit()`. If you want to provide your own implementation, set this option:
+
+```cmake
+set(DMOSI_DONT_IMPLEMENT_DMOD_API_PROC ON CACHE BOOL "Don't implement DMOD Process API" FORCE)
+```
+
+**Note:** The global `DMOSI_DONT_IMPLEMENT_DMOD_API` option takes precedence. If it's set to ON, all DMOD API implementations (including mutex, environment, and process) will be disabled regardless of the granular settings.
 
 ## Building
 

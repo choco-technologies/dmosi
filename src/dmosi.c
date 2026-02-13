@@ -351,3 +351,65 @@ int Dmod_Mutex_Unlock(void* mutex)
 
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX
 
+//==============================================================================
+//                              DMOD Environment API Implementation
+//==============================================================================
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_ENV)
+
+/**
+ * @brief DMOD environment API implementation using DMOSI
+ *
+ * This implementation provides the DMOD GetCurrentModuleNameEx API using the 
+ * underlying DMOSI thread operations. It is only compiled when 
+ * DMOSI_DONT_IMPLEMENT_DMOD_API and DMOSI_DONT_IMPLEMENT_DMOD_API_ENV are not defined.
+ *
+ * @note This function gets the module name from the current thread. If no current
+ *       thread is available or it has no module name, it returns the provided default.
+ */
+
+const char* Dmod_GetCurrentModuleNameEx(const char* Default)
+{
+    dmod_thread_t current_thread = dmosi_thread_current();
+    if (current_thread != NULL) {
+        const char* module_name = dmosi_thread_get_module_name(current_thread);
+        if (module_name != NULL) {
+            return module_name;
+        }
+    }
+    return Default;
+}
+
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_ENV
+
+//==============================================================================
+//                              DMOD Process API Implementation
+//==============================================================================
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_PROC)
+
+/**
+ * @brief DMOD process API implementation using DMOSI
+ *
+ * This implementation provides the DMOD Exit API using the underlying
+ * DMOSI process operations. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
+ * and DMOSI_DONT_IMPLEMENT_DMOD_API_PROC are not defined.
+ *
+ * @note This function attempts to kill the current process. If no process API
+ *       is available, it falls back to calling the standard C library exit() function.
+ */
+
+#include <stdlib.h>
+
+void Dmod_Exit(int Status)
+{
+    dmod_process_t current_process = dmosi_process_current();
+    if (current_process != NULL) {
+        dmosi_process_kill(current_process);
+    }
+    
+    // Fallback to standard exit if process API is not available or kill failed
+    exit(Status);
+}
+
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_PROC
+
+
