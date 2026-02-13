@@ -1,6 +1,10 @@
 #include <errno.h>
 #include "dmosi.h"
 
+// Default values for spawned processes
+#define DMOD_DEFAULT_STACK_SIZE 8192
+#define DMOD_DEFAULT_PRIORITY 5
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _init,   (void) )
 {
     return false;
@@ -441,12 +445,14 @@ static void dmod_spawn_thread_entry(void* arg)
 {
     dmod_spawn_args_t* spawn_args = arg;
     if (spawn_args != NULL && spawn_args->context != NULL) {
+        // Run the module and get result
         int result = Dmod_Run(spawn_args->context, spawn_args->argc, spawn_args->argv);
         
-        // Store result in process (could be extended to store exit code)
-        (void)result;
+        // Exit the process with the result code
+        // This allows Dmod_GetProcessResult to retrieve the exit status
+        Dmod_Exit(result);
         
-        // Free the structure after execution
+        // Free the structure after execution (if Exit doesn't terminate)
         Dmod_Free(spawn_args);
     }
 }
@@ -502,13 +508,13 @@ Dmod_Pid_t Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
     // Get stack size from Context header
     uint64_t stack_size = Dmod_GetStackSize(Context);
     if (stack_size == 0) {
-        stack_size = 8192;  // Default fallback
+        stack_size = DMOD_DEFAULT_STACK_SIZE;
     }
 
     // Inherit priority from current thread
     int priority = dmosi_thread_get_priority(NULL);
     if (priority == 0) {
-        priority = 5;  // Default fallback
+        priority = DMOD_DEFAULT_PRIORITY;
     }
 
     // Create a thread to run the module
@@ -587,13 +593,13 @@ Dmod_Pid_t Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
     // Get stack size from Context header
     uint64_t stack_size = Dmod_GetStackSize(Context);
     if (stack_size == 0) {
-        stack_size = 8192;  // Default fallback
+        stack_size = DMOD_DEFAULT_STACK_SIZE;
     }
 
     // Inherit priority from current thread
     int priority = dmosi_thread_get_priority(NULL);
     if (priority == 0) {
-        priority = 5;  // Default fallback
+        priority = DMOD_DEFAULT_PRIORITY;
     }
 
     // Create a detached thread to run the module
