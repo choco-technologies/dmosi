@@ -130,9 +130,10 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _thread_get_process
 //==============================================================================
 //                              Process API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, dmod_process_t parent) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, const char* module_name, dmod_process_t parent) )
 {
     (void)name;
+    (void)module_name;
     (void)parent;
     return NULL;
 }
@@ -486,17 +487,12 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
         return -EINVAL;
     }
 
-    // Create a process
-    dmod_process_t new_process = dmosi_process_create(module_name, parent);
+    // Create a process, passing module_name directly for tracking and identification.
+    // The process name and module name both use the module's name since the process
+    // represents exactly this module.
+    dmod_process_t new_process = dmosi_process_create(module_name, module_name, parent);
     if (new_process == NULL) {
         DMOD_LOG_ERROR("Failed to create process for module '%s'\n", module_name);
-        return -ENOMEM;
-    }
-
-    // Store the module name in the process for tracking and identification
-    if (dmosi_process_set_module_name(new_process, module_name) != 0) {
-        DMOD_LOG_ERROR("Failed to set module name for module '%s'\n", module_name);
-        dmosi_process_destroy(new_process);
         return -ENOMEM;
     }
 

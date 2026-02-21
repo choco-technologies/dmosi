@@ -150,10 +150,11 @@ typedef enum {
  * Creates a new process container. The process is a container for threads.
  *
  * @param name Name of the process (can be NULL)
+ * @param module_name Module name to associate with the process (can be NULL)
  * @param parent Parent process (can be NULL for detached processes)
  * @return dmod_process_t Created process handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, dmod_process_t parent) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, const char* module_name, dmod_process_t parent) );
 
 /**
  * @brief Destroy a process
