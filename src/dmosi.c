@@ -127,6 +127,21 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _thread_get_process
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_all, (dmod_thread_t* threads, size_t max_count) )
+{
+    (void)threads;
+    (void)max_count;
+    return 0;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_by_process, (dmod_process_t process, dmod_thread_t* threads, size_t max_count) )
+{
+    (void)process;
+    (void)threads;
+    (void)max_count;
+    return 0;
+}
+
 //==============================================================================
 //                              Process API
 //==============================================================================
