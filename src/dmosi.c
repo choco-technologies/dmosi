@@ -279,6 +279,12 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_exit_status, (dmo
     return -ENOSYS;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_get_parent, (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
 //==============================================================================
 //                              Queue API
 //==============================================================================
