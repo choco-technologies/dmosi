@@ -71,7 +71,7 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_post,    (dmosi_sem
 //==============================================================================
 //                              Thread API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_thread_t, _thread_create,    (dmosi_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, dmosi_process_t process) )
 {
     (void)entry;
     (void)arg;
@@ -82,18 +82,18 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _thread_destroy,   (dmod_thread_t thread) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _thread_destroy,   (dmosi_thread_t thread) )
 {
     (void)thread;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_join,      (dmod_thread_t thread) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_join,      (dmosi_thread_t thread) )
 {
     (void)thread;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_current,   (void) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_thread_t, _thread_current,   (void) )
 {
     return NULL;
 }
@@ -103,38 +103,38 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _thread_sleep,     (uint32_t 
     (void)ms;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_name,  (dmod_thread_t thread) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_name,  (dmosi_thread_t thread) )
 {
     (void)thread;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_module_name,  (dmod_thread_t thread) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _thread_get_module_name,  (dmosi_thread_t thread) )
 {
     (void)thread;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_get_priority,  (dmod_thread_t thread) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_get_priority,  (dmosi_thread_t thread) )
 {
     (void)thread;
     return 0;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _thread_get_process, (dmod_thread_t thread) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _thread_get_process, (dmosi_thread_t thread) )
 {
     (void)thread;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_all, (dmod_thread_t* threads, size_t max_count) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_all, (dmosi_thread_t* threads, size_t max_count) )
 {
     (void)threads;
     (void)max_count;
     return 0;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_by_process, (dmod_process_t process, dmod_thread_t* threads, size_t max_count) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_by_process, (dmosi_process_t process, dmosi_thread_t* threads, size_t max_count) )
 {
     (void)process;
     (void)threads;
@@ -145,7 +145,7 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_by_process, (dm
 //==============================================================================
 //                              Process API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, const char* module_name, dmod_process_t parent) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_create,    (const char* name, const char* module_name, dmosi_process_t parent) )
 {
     (void)name;
     (void)module_name;
@@ -153,119 +153,119 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_create,   
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _process_destroy,   (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _process_destroy,   (dmosi_process_t process) )
 {
     (void)process;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_kill,      (dmod_process_t process, int status) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_kill,      (dmosi_process_t process, int status) )
 {
     (void)process;
     (void)status;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_wait,      (dmod_process_t process, int32_t timeout_ms) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_wait,      (dmosi_process_t process, int32_t timeout_ms) )
 {
     (void)process;
     (void)timeout_ms;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_current,   (void) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_current,   (void) )
 {
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_current, (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_current, (dmosi_process_t process) )
 {
     (void)process;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_state_t, _process_get_state, (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_state_t, _process_get_state, (dmosi_process_t process) )
 {
     (void)process;
     return DMOSI_PROCESS_STATE_TERMINATED;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_id_t, _process_get_id, (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_id_t, _process_get_id, (dmosi_process_t process) )
 {
     (void)process;
     return 0;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_id,    (dmod_process_t process, dmod_process_id_t pid) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_id,    (dmosi_process_t process, dmosi_process_id_t pid) )
 {
     (void)process;
     (void)pid;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_name,  (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_name,  (dmosi_process_t process) )
 {
     (void)process;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_module_name, (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_module_name, (dmosi_process_t process) )
 {
     (void)process;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_module_name, (dmod_process_t process, const char* module_name) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_module_name, (dmosi_process_t process, const char* module_name) )
 {
     (void)process;
     (void)module_name;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_uid,   (dmod_process_t process, dmod_user_id_t uid) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_uid,   (dmosi_process_t process, dmosi_user_id_t uid) )
 {
     (void)process;
     (void)uid;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_user_id_t, _process_get_uid,   (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_user_id_t, _process_get_uid,   (dmosi_process_t process) )
 {
     (void)process;
     return 0;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_pwd,   (dmod_process_t process, const char* pwd) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_pwd,   (dmosi_process_t process, const char* pwd) )
 {
     (void)process;
     (void)pwd;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (dmosi_process_t process) )
 {
     (void)process;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_find_by_name, (const char* name) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_find_by_name, (const char* name) )
 {
     (void)name;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_process_t, _process_find_by_id,   (dmod_process_id_t pid) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_find_by_id,   (dmosi_process_id_t pid) )
 {
     (void)pid;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_get_exit_status, (dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_get_exit_status, (dmosi_process_t process) )
 {
     (void)process;
     return 0;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_exit_status, (dmod_process_t process, int exit_status) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_exit_status, (dmosi_process_t process, int exit_status) )
 {
     (void)process;
     (void)exit_status;
@@ -409,7 +409,7 @@ int Dmod_Mutex_Unlock(void* mutex)
 const char* Dmod_GetCurrentModuleNameEx(const char* Default)
 {
     // Get the module name from the current thread's associated process
-    dmod_process_t current_process = dmosi_process_current();
+    dmosi_process_t current_process = dmosi_process_current();
     if (current_process != NULL) {
         const char* module_name = dmosi_process_get_module_name(current_process);
         if (module_name != NULL) {
@@ -439,7 +439,7 @@ const char* Dmod_GetCurrentModuleNameEx(const char* Default)
 
 void Dmod_Exit(int Status)
 {
-    dmod_process_t current_process = dmosi_process_current();
+    dmosi_process_t current_process = dmosi_process_current();
     if (current_process != NULL) {
         dmosi_process_kill(current_process, Status);
     }
@@ -464,7 +464,7 @@ typedef struct {
     Dmod_Context_t* context;
     int argc;
     char** argv;
-    dmod_process_t process;  // Process handle for this spawn
+    dmosi_process_t process;  // Process handle for this spawn
 } dmod_spawn_args_t;
 
 /**
@@ -501,7 +501,7 @@ static void dmod_spawn_thread_entry(void* arg)
  * @param parent Parent process (NULL for detached, current for spawn)
  * @return Dmod_Pid_t Process ID on success, negative error code on failure
  */
-static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, char* argv[], dmod_process_t parent)
+static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, char* argv[], dmosi_process_t parent)
 {
     if (Context == NULL) {
         DMOD_LOG_ERROR("Failed to spawn module: Context is NULL\n");
@@ -518,14 +518,14 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     // Create a process, passing module_name directly for tracking and identification.
     // The process name and module name both use the module's name since the process
     // represents exactly this module.
-    dmod_process_t new_process = dmosi_process_create(module_name, module_name, parent);
+    dmosi_process_t new_process = dmosi_process_create(module_name, module_name, parent);
     if (new_process == NULL) {
         DMOD_LOG_ERROR("Failed to create process for module '%s'\n", module_name);
         return -ENOMEM;
     }
 
     // Get process ID
-    dmod_process_id_t pid = dmosi_process_get_id(new_process);
+    dmosi_process_id_t pid = dmosi_process_get_id(new_process);
 
     // Allocate spawn args on heap using MallocEx for better tracking
     // Note: We create the process first to get the PID, then allocate spawn_args.
@@ -557,7 +557,7 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     // Create a thread to run the module
     // The thread name uses the module's name since the thread is part of the new process/module.
     // The module name is stored in the process and retrieved via dmosi_thread_get_module_name.
-    dmod_thread_t thread = dmosi_thread_create(
+    dmosi_thread_t thread = dmosi_thread_create(
         dmod_spawn_thread_entry,
         spawn_args,
         priority,
@@ -594,7 +594,7 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
 Dmod_Pid_t Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
 {
     // Spawn with current process as parent
-    dmod_process_t current_process = dmosi_process_current();
+    dmosi_process_t current_process = dmosi_process_current();
     return dmod_spawn_module_internal(Context, argc, argv, current_process);
 }
 

@@ -97,7 +97,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,           _mutex_unlock,    (dmosi_mutex_t mu
  * This forward declaration allows Process API to reference threads
  * before the Thread API section.
  */
-typedef struct dmod_thread* dmod_thread_t;
+typedef struct dmosi_thread* dmosi_thread_t;
 
 //==============================================================================
 //                              Process API
@@ -121,17 +121,17 @@ typedef struct dmod_thread* dmod_thread_t;
  * @note The actual implementation of the process is hidden
  * from the user and is specific to the underlying OS.
  */
-typedef struct dmod_process* dmod_process_t;
+typedef struct dmosi_process* dmosi_process_t;
 
 /**
  * @brief Process ID type
  */
-typedef uint32_t dmod_process_id_t;
+typedef uint32_t dmosi_process_id_t;
 
 /**
  * @brief User ID type
  */
-typedef uint32_t dmod_user_id_t;
+typedef uint32_t dmosi_user_id_t;
 
 /**
  * @brief Process state enumeration
@@ -142,7 +142,7 @@ typedef enum {
     DMOSI_PROCESS_STATE_SUSPENDED,  /**< Process is suspended */
     DMOSI_PROCESS_STATE_TERMINATED, /**< Process has terminated */
     DMOSI_PROCESS_STATE_ZOMBIE      /**< Process terminated but not cleaned up */
-} dmod_process_state_t;
+} dmosi_process_state_t;
 
 /**
  * @brief Create a process
@@ -152,16 +152,16 @@ typedef enum {
  * @param name Name of the process (can be NULL)
  * @param module_name Module name to associate with the process (can be NULL)
  * @param parent Parent process (can be NULL for detached processes)
- * @return dmod_process_t Created process handle, NULL on failure
+ * @return dmosi_process_t Created process handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, const char* module_name, dmod_process_t parent) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _process_create,    (const char* name, const char* module_name, dmosi_process_t parent) );
 
 /**
  * @brief Destroy a process
  *
  * @param process Process handle to destroy
  */
-DMOD_BUILTIN_API( dmosi, 1.0, void,           _process_destroy,   (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, void,           _process_destroy,   (dmosi_process_t process) );
 
 /**
  * @brief Kill a process
@@ -172,7 +172,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,           _process_destroy,   (dmod_process_
  * @param status Exit status code
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_kill,      (dmod_process_t process, int status) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_kill,      (dmosi_process_t process, int status) );
 
 /**
  * @brief Wait for a process to terminate
@@ -181,14 +181,14 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_kill,      (dmod_process_
  * @param timeout_ms Timeout in milliseconds (0 = no wait, -1 = wait forever)
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_wait,      (dmod_process_t process, int32_t timeout_ms) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_wait,      (dmosi_process_t process, int32_t timeout_ms) );
 
 /**
  * @brief Get current process
  *
- * @return dmod_process_t Current process handle
+ * @return dmosi_process_t Current process handle
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_current,   (void) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _process_current,   (void) );
 
 /**
  * @brief Set current process
@@ -196,23 +196,23 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_current,   (void) );
  * @param process Process handle to set as current
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_current, (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_current, (dmosi_process_t process) );
 
 /**
  * @brief Get process state
  *
  * @param process Process handle
- * @return dmod_process_state_t Current state of the process
+ * @return dmosi_process_state_t Current state of the process
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_state_t, _process_get_state, (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_state_t, _process_get_state, (dmosi_process_t process) );
 
 /**
  * @brief Get process ID
  *
  * @param process Process handle
- * @return dmod_process_id_t Process ID, 0 on failure
+ * @return dmosi_process_id_t Process ID, 0 on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_id_t, _process_get_id, (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_id_t, _process_get_id, (dmosi_process_t process) );
 
 /**
  * @brief Set process ID
@@ -221,7 +221,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_id_t, _process_get_id, (dmod_process_
  * @param pid Process ID to set
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_id,    (dmod_process_t process, dmod_process_id_t pid) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_id,    (dmosi_process_t process, dmosi_process_id_t pid) );
 
 /**
  * @brief Get process name
@@ -229,7 +229,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_id,    (dmod_process_
  * @param process Process handle
  * @return const char* Process name, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_name,  (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_name,  (dmosi_process_t process) );
 
 /**
  * @brief Get process module name
@@ -237,7 +237,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_name,  (dmod_process_
  * @param process Process handle
  * @return const char* Module name associated with the process, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_module_name, (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_module_name, (dmosi_process_t process) );
 
 /**
  * @brief Set process module name
@@ -246,7 +246,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_module_name, (dmod_pr
  * @param module_name Module name to associate with the process
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_module_name, (dmod_process_t process, const char* module_name) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_module_name, (dmosi_process_t process, const char* module_name) );
 
 /**
  * @brief Set process user ID
@@ -255,15 +255,15 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_module_name, (dmod_pr
  * @param uid User ID to set
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_uid,   (dmod_process_t process, dmod_user_id_t uid) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_uid,   (dmosi_process_t process, dmosi_user_id_t uid) );
 
 /**
  * @brief Get process user ID
  *
  * @param process Process handle
- * @return dmod_user_id_t User ID, 0 on failure
+ * @return dmosi_user_id_t User ID, 0 on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_user_id_t, _process_get_uid,   (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_user_id_t, _process_get_uid,   (dmosi_process_t process) );
 
 /**
  * @brief Set process working directory (pwd)
@@ -272,7 +272,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_user_id_t, _process_get_uid,   (dmod_process_
  * @param pwd Working directory path
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_pwd,   (dmod_process_t process, const char* pwd) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_pwd,   (dmosi_process_t process, const char* pwd) );
 
 /**
  * @brief Get process working directory (pwd)
@@ -280,23 +280,23 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_pwd,   (dmod_process_
  * @param process Process handle
  * @return const char* Working directory path, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmosi_process_t process) );
 
 /**
  * @brief Find a process by name
  *
  * @param name Process name to search for
- * @return dmod_process_t Process handle, NULL if not found
+ * @return dmosi_process_t Process handle, NULL if not found
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_find_by_name, (const char* name) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _process_find_by_name, (const char* name) );
 
 /**
  * @brief Find a process by process ID
  *
  * @param pid Process ID to search for
- * @return dmod_process_t Process handle, NULL if not found
+ * @return dmosi_process_t Process handle, NULL if not found
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_find_by_id,   (dmod_process_id_t pid) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _process_find_by_id,   (dmosi_process_id_t pid) );
 
 /**
  * @brief Get process exit status
@@ -304,7 +304,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_find_by_id,   (dmod_proce
  * @param process Process handle
  * @return int Exit status of the process
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_get_exit_status, (dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_get_exit_status, (dmosi_process_t process) );
 
 /**
  * @brief Set process exit status
@@ -313,7 +313,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_get_exit_status, (dmod_pr
  * @param exit_status Exit status to set
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_exit_status, (dmod_process_t process, int exit_status) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_exit_status, (dmosi_process_t process, int exit_status) );
 
 /** @} */ // end of DMOSI_PROCESS_API
 
@@ -335,7 +335,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_exit_status, (dmod_pr
  *
  * @param arg User-provided argument passed to the thread
  */
-typedef void (*dmod_thread_entry_t)(void* arg);
+typedef void (*dmosi_thread_entry_t)(void* arg);
 
 /**
  * @brief Create a thread
@@ -346,16 +346,16 @@ typedef void (*dmod_thread_entry_t)(void* arg);
  * @param stack_size Stack size for the thread
  * @param name              Name of the thread (cannot be NULL)
  * @param process           Process to associate the thread with (NULL = current process)
- * @return dmod_thread_t Created thread handle, NULL on failure
+ * @return dmosi_thread_t Created thread handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_thread_t, _thread_create,    (dmosi_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, dmosi_process_t process) );
 
 /**
  * @brief Destroy a thread
  *
  * @param thread Thread handle to destroy
  */
-DMOD_BUILTIN_API( dmosi, 1.0, void,          _thread_destroy,   (dmod_thread_t thread) );
+DMOD_BUILTIN_API( dmosi, 1.0, void,          _thread_destroy,   (dmosi_thread_t thread) );
 
 /**
  * @brief Join a thread (wait for it to finish)
@@ -363,14 +363,14 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,          _thread_destroy,   (dmod_thread_t t
  * @param thread Thread handle to join
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,           _thread_join,      (dmod_thread_t thread) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,           _thread_join,      (dmosi_thread_t thread) );
 
 /**
  * @brief Get current thread
  *
- * @return dmod_thread_t Current thread handle
+ * @return dmosi_thread_t Current thread handle
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_current,   (void) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_thread_t, _thread_current,   (void) );
 
 /**
  * @brief Sleep for a specified time in milliseconds
@@ -385,7 +385,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,          _thread_sleep,     (uint32_t ms) );
  * @param thread Thread handle (if NULL, returns name of current thread)
  * @return const char* Thread name, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmod_thread_t thread) );
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmosi_thread_t thread) );
 
 /**
  * @brief Get thread module name
@@ -396,7 +396,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmod_thread_t t
  * @param thread Thread handle (if NULL, returns module name of current thread)
  * @return const char* Module name of the process that owns the thread, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmod_thread_t thread) );
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmosi_thread_t thread) );
 
 /**
  * @brief Get thread priority
@@ -404,15 +404,15 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmod_thre
  * @param thread Thread handle (if NULL, returns priority of current thread)
  * @return int Thread priority, or 0 on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,  _thread_get_priority,  (dmod_thread_t thread) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,  _thread_get_priority,  (dmosi_thread_t thread) );
 
 /**
  * @brief Get thread's associated process
  *
  * @param thread Thread handle (if NULL, returns process of current thread)
- * @return dmod_process_t Process handle that the thread belongs to, NULL on failure
+ * @return dmosi_process_t Process handle that the thread belongs to, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _thread_get_process, (dmod_thread_t thread) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _thread_get_process, (dmosi_thread_t thread) );
 
 /**
  * @brief Get an array of all threads
@@ -426,7 +426,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _thread_get_process, (dmod_thread_
  * @param max_count Maximum number of handles to write into @p threads (ignored when @p threads is NULL)
  * @return size_t Number of threads (when @p threads is NULL) or number of handles written
  */
-DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_all, (dmod_thread_t* threads, size_t max_count) );
+DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_all, (dmosi_thread_t* threads, size_t max_count) );
 
 /**
  * @brief Get an array of threads belonging to a specific process
@@ -441,7 +441,7 @@ DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_all, (dmod_thread_t* threads, 
  * @param max_count Maximum number of handles to write into @p threads (ignored when @p threads is NULL)
  * @return size_t Number of threads in the process (when @p threads is NULL) or number of handles written
  */
-DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_by_process, (dmod_process_t process, dmod_thread_t* threads, size_t max_count) );
+DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_by_process, (dmosi_process_t process, dmosi_thread_t* threads, size_t max_count) );
 
 /** @} */ // end of DMOSI_THREAD_API
 
