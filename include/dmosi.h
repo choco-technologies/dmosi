@@ -397,6 +397,35 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,  _thread_get_priority,  (dmod_thread_t thread
  */
 DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _thread_get_process, (dmod_thread_t thread) );
 
+/**
+ * @brief Get an array of all threads
+ *
+ * Fills the provided array with handles of all existing threads.
+ * If @p threads is NULL, the function returns the total number of threads
+ * without writing anything, which is useful for determining the array size
+ * needed before allocation.
+ *
+ * @param threads Pointer to array to fill with thread handles, or NULL to query count only
+ * @param max_count Maximum number of handles to write into @p threads (ignored when @p threads is NULL)
+ * @return size_t Number of threads (when @p threads is NULL) or number of handles written
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_all, (dmod_thread_t* threads, size_t max_count) );
+
+/**
+ * @brief Get an array of threads belonging to a specific process
+ *
+ * Fills the provided array with handles of all threads associated with @p process.
+ * If @p threads is NULL, the function returns the number of threads in that process
+ * without writing anything, which is useful for determining the array size needed
+ * before allocation.
+ *
+ * @param process Process handle whose threads to retrieve
+ * @param threads Pointer to array to fill with thread handles, or NULL to query count only
+ * @param max_count Maximum number of handles to write into @p threads (ignored when @p threads is NULL)
+ * @return size_t Number of threads in the process (when @p threads is NULL) or number of handles written
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_by_process, (dmod_process_t process, dmod_thread_t* threads, size_t max_count) );
+
 /** @} */ // end of DMOSI_THREAD_API
 
 //==============================================================================
