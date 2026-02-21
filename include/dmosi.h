@@ -315,6 +315,14 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_get_exit_status, (dmosi_p
  */
 DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_exit_status, (dmosi_process_t process, int exit_status) );
 
+/**
+ * @brief Get process parent
+ *
+ * @param process Process handle
+ * @return dmosi_process_t Parent process handle, NULL if no parent
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _process_get_parent, (dmosi_process_t process) );
+
 /** @} */ // end of DMOSI_PROCESS_API
 
 //==============================================================================
