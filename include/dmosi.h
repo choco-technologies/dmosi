@@ -150,10 +150,11 @@ typedef enum {
  * Creates a new process container. The process is a container for threads.
  *
  * @param name Name of the process (can be NULL)
+ * @param module_name Module name to associate with the process (can be NULL)
  * @param parent Parent process (can be NULL for detached processes)
  * @return dmod_process_t Created process handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, dmod_process_t parent) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_create,    (const char* name, const char* module_name, dmod_process_t parent) );
 
 /**
  * @brief Destroy a process
@@ -229,6 +230,23 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_id,    (dmod_process_
  * @return const char* Process name, NULL on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_name,  (dmod_process_t process) );
+
+/**
+ * @brief Get process module name
+ *
+ * @param process Process handle
+ * @return const char* Module name associated with the process, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_module_name, (dmod_process_t process) );
+
+/**
+ * @brief Set process module name
+ *
+ * @param process Process handle
+ * @param module_name Module name to associate with the process
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_module_name, (dmod_process_t process, const char* module_name) );
 
 /**
  * @brief Set process user ID
@@ -310,11 +328,10 @@ typedef void (*dmod_thread_entry_t)(void* arg);
  * @param priority Thread priority
  * @param stack_size Stack size for the thread
  * @param name              Name of the thread (cannot be NULL)
- * @param module_name       Name of the module creating the thread (for tracking allocations)
  * @param process           Process to associate the thread with (NULL = current process)
  * @return dmod_thread_t Created thread handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name, dmod_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, dmod_process_t process) );
 
 /**
  * @brief Destroy a thread
@@ -356,8 +373,11 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,   _thread_get_name,  (dmod_thread_t t
 /**
  * @brief Get thread module name
  *
+ * Returns the module name associated with the thread by retrieving it from
+ * the thread's associated process.
+ *
  * @param thread Thread handle (if NULL, returns module name of current thread)
- * @return const char* Module name that created the thread, NULL on failure
+ * @return const char* Module name of the process that owns the thread, NULL on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,  _thread_get_module_name,  (dmod_thread_t thread) );
 
