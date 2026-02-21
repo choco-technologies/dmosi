@@ -298,6 +298,23 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_find_by_name, (const char
  */
 DMOD_BUILTIN_API( dmosi, 1.0, dmod_process_t, _process_find_by_id,   (dmod_process_id_t pid) );
 
+/**
+ * @brief Get process exit status
+ *
+ * @param process Process handle
+ * @return int Exit status of the process
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_get_exit_status, (dmod_process_t process) );
+
+/**
+ * @brief Set process exit status
+ *
+ * @param process Process handle
+ * @param exit_status Exit status to set
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_exit_status, (dmod_process_t process, int exit_status) );
+
 /** @} */ // end of DMOSI_PROCESS_API
 
 //==============================================================================
