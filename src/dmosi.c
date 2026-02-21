@@ -71,14 +71,13 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_post,    (dmosi_sem
 //==============================================================================
 //                              Thread API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, const char* module_name, dmod_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmod_thread_t, _thread_create,    (dmod_thread_entry_t entry, void* arg, int priority, size_t stack_size, const char* name, dmod_process_t process) )
 {
     (void)entry;
     (void)arg;
     (void)priority;
     (void)stack_size;
     (void)name;
-    (void)module_name;
     (void)process;
     return NULL;
 }
@@ -191,6 +190,19 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_name,  (d
 {
     (void)process;
     return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_module_name, (dmod_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_module_name, (dmod_process_t process, const char* module_name) )
+{
+    (void)process;
+    (void)module_name;
+    return -ENOSYS;
 }
 
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_uid,   (dmod_process_t process, dmod_user_id_t uid) )
@@ -358,19 +370,22 @@ int Dmod_Mutex_Unlock(void* mutex)
  * @brief DMOD environment API implementation using DMOSI
  *
  * This implementation provides the DMOD GetCurrentModuleNameEx API using the 
- * underlying DMOSI thread operations. It is only compiled when 
+ * underlying DMOSI process operations. It is only compiled when 
  * DMOSI_DONT_IMPLEMENT_DMOD_API and DMOSI_DONT_IMPLEMENT_DMOD_API_ENV are not defined.
  *
- * @note This function gets the module name from the current thread. If no current
- *       thread is available or it has no module name, it returns the provided default.
+ * @note This function gets the module name from the current process. If no current
+ *       process is available or it has no module name, it returns the provided default.
  */
 
 const char* Dmod_GetCurrentModuleNameEx(const char* Default)
 {
-    // dmosi_thread_get_module_name accepts NULL and returns current thread's module name
-    const char* module_name = dmosi_thread_get_module_name(NULL);
-    if (module_name != NULL) {
-        return module_name;
+    // Get the module name from the current thread's associated process
+    dmod_process_t current_process = dmosi_process_current();
+    if (current_process != NULL) {
+        const char* module_name = dmosi_process_get_module_name(current_process);
+        if (module_name != NULL) {
+            return module_name;
+        }
     }
     return Default;
 }
@@ -478,6 +493,13 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
         return -ENOMEM;
     }
 
+    // Store the module name in the process for tracking and identification
+    if (dmosi_process_set_module_name(new_process, module_name) != 0) {
+        DMOD_LOG_ERROR("Failed to set module name for module '%s'\n", module_name);
+        dmosi_process_destroy(new_process);
+        return -ENOMEM;
+    }
+
     // Get process ID
     dmod_process_id_t pid = dmosi_process_get_id(new_process);
 
@@ -509,16 +531,14 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     }
 
     // Create a thread to run the module
-    // Both name and module_name parameters use the spawned module's name since
-    // the thread is part of the new process/module, not the parent.
-    // This ensures proper tracking and identification of the thread.
+    // The thread name uses the module's name since the thread is part of the new process/module.
+    // The module name is stored in the process and retrieved via dmosi_thread_get_module_name.
     dmod_thread_t thread = dmosi_thread_create(
         dmod_spawn_thread_entry,
         spawn_args,
         priority,
         (size_t)stack_size,
         module_name,  // Thread name: identifies the thread
-        module_name,  // Module name: for allocation tracking
         new_process   // Process: associate thread with the new process
     );
 
