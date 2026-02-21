@@ -93,6 +93,13 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_join,      (dmosi_thre
     return -ENOSYS;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_kill,      (dmosi_thread_t thread, int status) )
+{
+    (void)thread;
+    (void)status;
+    return -ENOSYS;
+}
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_thread_t, _thread_current,   (void) )
 {
     return NULL;

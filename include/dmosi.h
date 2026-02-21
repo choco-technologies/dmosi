@@ -366,6 +366,22 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,          _thread_destroy,   (dmosi_thread_t 
 DMOD_BUILTIN_API( dmosi, 1.0, int,           _thread_join,      (dmosi_thread_t thread) );
 
 /**
+ * @brief Kill a thread
+ *
+ * Forcefully terminate a thread.
+ *
+ * @warning This operation may leave shared resources (mutexes, memory, etc.)
+ *          in an inconsistent state. Use with caution and prefer cooperative
+ *          shutdown mechanisms when possible.
+ *
+ * @param thread Thread handle to kill
+ * @param status Exit status code passed to the underlying OS; may not be
+ *               observable by other threads after termination
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,           _thread_kill,      (dmosi_thread_t thread, int status) );
+
+/**
  * @brief Get current thread
  *
  * @return dmosi_thread_t Current thread handle
