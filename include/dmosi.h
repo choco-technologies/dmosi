@@ -677,4 +677,49 @@ DMOD_BUILTIN_API( dmosi, 1.0, uint32_t,      _timer_get_period, (dmosi_timer_t t
 
 /** @} */ // end of DMOSI_TIMER_API
 
+//==============================================================================
+//                              Interrupt Handler API
+//==============================================================================
+/**
+ * @defgroup DMOSI_IRQ_API Interrupt Handler API
+ * @brief Weak prototypes for RTOS-essential interrupt handlers
+ *
+ * These handlers are required by most RTOS implementations for correct
+ * operation. Different RTOS implementations and architectures use different
+ * names for these handlers (e.g., @c PendSV_Handler or @c xPortPendSVHandler
+ * in FreeRTOS on ARM Cortex-M). The DMOSI standardized names allow
+ * RTOS-specific code to override these weak default (no-op) implementations.
+ * @{
+ */
+
+/**
+ * @brief PendSV interrupt handler
+ *
+ * Used by the RTOS for context switching between tasks/threads.
+ * On ARM Cortex-M this corresponds to @c PendSV_Handler.
+ * Override this weak implementation with the RTOS-specific context-switch
+ * handler.
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, void, _pendsv_handler,  (void) );
+
+/**
+ * @brief SVC (Supervisor Call) interrupt handler
+ *
+ * Used by the RTOS for privileged operations and system calls.
+ * On ARM Cortex-M this corresponds to @c SVC_Handler.
+ * Override this weak implementation with the RTOS-specific SVC handler.
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, void, _svc_handler,     (void) );
+
+/**
+ * @brief SysTick interrupt handler
+ *
+ * Used by the RTOS for time management and task scheduling.
+ * On ARM Cortex-M this corresponds to @c SysTick_Handler.
+ * Override this weak implementation with the RTOS-specific SysTick handler.
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, void, _systick_handler, (void) );
+
+/** @} */ // end of DMOSI_IRQ_API
+
 #endif // DMOSI_H
