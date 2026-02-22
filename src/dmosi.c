@@ -367,15 +367,15 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _timer_get_period, (dmosi
 //==============================================================================
 //                              Interrupt Handler API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _pendsv_handler,  (void) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _context_switch_handler, (void) )
 {
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _svc_handler,     (void) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _syscall_handler,         (void) )
 {
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _systick_handler, (void) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _tick_handler,            (void) )
 {
 }
 
