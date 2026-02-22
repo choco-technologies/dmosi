@@ -56,6 +56,12 @@ Software timers for periodic or one-shot callbacks:
 - `dmosi_timer_stop()` - Stop a timer
 - `dmosi_timer_reset()` - Reset a timer
 
+### 7. **Interrupt Handler API**
+Weak (no-op) prototypes for RTOS-essential interrupt handlers with architecture-independent dmosi names. RTOS-specific implementations override these to hook into the relevant hardware interrupts:
+- `dmosi_context_switch_handler()` — RTOS context switch (ARM Cortex-M: `PendSV_Handler`; RISC-V: software interrupt ISR)
+- `dmosi_syscall_handler()` — RTOS system/supervisor call (ARM Cortex-M: `SVC_Handler`; RISC-V: ecall / machine-mode trap handler)
+- `dmosi_tick_handler()` — RTOS periodic time tick (ARM Cortex-M: `SysTick_Handler`; RISC-V: machine timer interrupt handler)
+
 ## Usage
 
 ### Basic Integration
