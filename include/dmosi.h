@@ -346,6 +346,33 @@ DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _process_get_parent, (dmosi_proce
 typedef void (*dmosi_thread_entry_t)(void* arg);
 
 /**
+ * @brief Thread state enumeration
+ */
+typedef enum {
+    DMOSI_THREAD_STATE_CREATED,     /**< Thread created but not started */
+    DMOSI_THREAD_STATE_READY,       /**< Thread is ready to run */
+    DMOSI_THREAD_STATE_RUNNING,     /**< Thread is currently running */
+    DMOSI_THREAD_STATE_BLOCKED,     /**< Thread is blocked (waiting for resource) */
+    DMOSI_THREAD_STATE_SUSPENDED,   /**< Thread is suspended */
+    DMOSI_THREAD_STATE_TERMINATED   /**< Thread has terminated */
+} dmosi_thread_state_t;
+
+/**
+ * @brief Thread information structure
+ *
+ * This structure holds auxiliary information about a thread, including
+ * stack usage statistics, state, CPU usage, and runtime.
+ */
+typedef struct {
+    size_t   stack_total;       /**< Total stack size in bytes */
+    size_t   stack_current;     /**< Current stack usage in bytes */
+    size_t   stack_peak;        /**< Peak stack usage in bytes */
+    dmosi_thread_state_t state; /**< Current thread state */
+    float    cpu_usage;         /**< CPU usage as a percentage (0.0 - 100.0) */
+    uint64_t runtime_ms;        /**< Thread runtime in milliseconds */
+} dmosi_thread_info_t;
+
+/**
  * @brief Create a thread
  *
  * @param entry Entry function for the thread
@@ -466,6 +493,18 @@ DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_all, (dmosi_thread_t* threads,
  * @return size_t Number of threads in the process (when @p threads is NULL) or number of handles written
  */
 DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_by_process, (dmosi_process_t process, dmosi_thread_t* threads, size_t max_count) );
+
+/**
+ * @brief Get information about a thread
+ *
+ * Fills the provided @p info structure with auxiliary information about
+ * @p thread, including stack usage statistics, state, CPU usage, and runtime.
+ *
+ * @param thread Thread handle (if NULL, returns info for the current thread)
+ * @param info   Pointer to a dmosi_thread_info_t structure to fill
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int, _thread_get_info, (dmosi_thread_t thread, dmosi_thread_info_t* info) );
 
 /** @} */ // end of DMOSI_THREAD_API
 

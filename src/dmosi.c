@@ -149,6 +149,21 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, size_t, _thread_get_by_process, (dm
     return 0;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_get_info, (dmosi_thread_t thread, dmosi_thread_info_t* info) )
+{
+    (void)thread;
+    if (info == NULL) {
+        return -EINVAL;
+    }
+    info->stack_total   = 0;
+    info->stack_current = 0;
+    info->stack_peak    = 0;
+    info->state         = DMOSI_THREAD_STATE_TERMINATED;
+    info->cpu_usage     = 0.0f;
+    info->runtime_ms    = 0;
+    return -ENOSYS;
+}
+
 //==============================================================================
 //                              Process API
 //==============================================================================
