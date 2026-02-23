@@ -395,6 +395,14 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _tick_handler,            (vo
 }
 
 //==============================================================================
+//                              System Time API
+//==============================================================================
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _get_tick_count, (void) )
+{
+    return 0;
+}
+
+//==============================================================================
 //                              DMOD Mutex API Implementation
 //==============================================================================
 #if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX)

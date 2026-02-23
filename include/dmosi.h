@@ -780,4 +780,30 @@ DMOD_BUILTIN_API( dmosi, 1.0, void, _tick_handler,            (void) );
 
 /** @} */ // end of DMOSI_IRQ_API
 
+//==============================================================================
+//                              System Time API
+//==============================================================================
+/**
+ * @defgroup DMOSI_SYSTIME_API System Time API
+ * @brief API for reading the RTOS system clock (SysTick)
+ *
+ * This API provides a function to read the current RTOS tick count, which
+ * is incremented by the hardware timer used as the RTOS time base (e.g.,
+ * SysTick on ARM Cortex-M). The tick count can be used to measure elapsed
+ * time and implement timeouts.
+ * @{
+ */
+
+/**
+ * @brief Get the current RTOS tick count
+ *
+ * Returns the number of RTOS ticks elapsed since the scheduler was started.
+ * The tick period depends on the RTOS configuration (typically 1 ms per tick).
+ *
+ * @return uint32_t Current tick count
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, uint32_t, _get_tick_count, (void) );
+
+/** @} */ // end of DMOSI_SYSTIME_API
+
 #endif // DMOSI_H
