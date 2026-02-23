@@ -593,11 +593,12 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     spawn_args->argv = argv;
     spawn_args->process = new_process;
 
-    // Get stack size from Context header
+    // Get stack size from Context header and add overhead for thread/module startup
     uint64_t stack_size = Dmod_GetStackSize(Context);
     if (stack_size == 0) {
         stack_size = DMOSI_DEFAULT_STACK_SIZE;
     }
+    stack_size += DMOSI_THREAD_STACK_OVERHEAD;
 
     // Inherit priority from current thread
     int priority = dmosi_thread_get_priority(NULL);

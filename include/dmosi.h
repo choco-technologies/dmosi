@@ -373,6 +373,16 @@ typedef struct {
 } dmosi_thread_info_t;
 
 /**
+ * @brief Extra stack bytes reserved for thread and module startup overhead
+ *
+ * The thread entry wrapper and module loading infrastructure consume stack
+ * before the module's own main function is invoked. This constant accounts
+ * for that overhead so that the effective stack available to the module
+ * matches the size declared in its header.
+ */
+#define DMOSI_THREAD_STACK_OVERHEAD 512
+
+/**
  * @brief Create a thread
  *
  * @param entry Entry function for the thread
