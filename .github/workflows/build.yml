@@ -61,3 +61,23 @@ jobs:
         test -f build/libdmosi.a
         echo "✓ libdmosi.a created successfully with DMOSI_DONT_IMPLEMENT_DMOD_API=ON"
 
+    - name: Clean for module mode build
+      run: |
+        rm -rf build
+        
+    - name: Configure CMake (DMOD_MODULE mode)
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DDMOD_MODE=DMOD_MODULE ..
+        
+    - name: Build (DMOD_MODULE mode)
+      run: |
+        cd build
+        make -j$(nproc)
+        
+    - name: Verify module mode build (no static library)
+      run: |
+        test ! -f build/libdmosi.a
+        echo "✓ libdmosi.a not created in DMOD_MODULE mode (expected)"
+
