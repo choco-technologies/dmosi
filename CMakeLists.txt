@@ -51,41 +51,55 @@ else()
     message(STATUS "dmod target already exists, skipping FetchContent")
 endif()
 
+include(${DMOD_DIR}/paths.cmake)
+
 # ======================================================================
-#               DMOD OSI Library
+#               DMOD OSI Interface Library
 # ======================================================================
 set(MODULE_NAME dmosi)
-add_library(${MODULE_NAME} STATIC
-    src/dmosi.c
-)
 
-target_compile_definitions(${MODULE_NAME} 
-    PRIVATE 
-        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API}>:DMOSI_DONT_IMPLEMENT_DMOD_API>
-        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX}>:DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX>
-        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_ENV}>:DMOSI_DONT_IMPLEMENT_DMOD_API_ENV>
-        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_PROC}>:DMOSI_DONT_IMPLEMENT_DMOD_API_PROC>
-        $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_TIME}>:DMOSI_DONT_IMPLEMENT_DMOD_API_TIME>
-        DMOSI_VERSION="${PROJECT_VERSION}"
-)
-
-target_include_directories(${MODULE_NAME} 
-    PUBLIC 
+add_library(dmosi_if INTERFACE)
+target_include_directories(dmosi_if
+    INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-)   
+)
 
-target_link_libraries(${MODULE_NAME} 
-    PRIVATE    
-        dmod_inc
+# ======================================================================
+#               DMOD OSI Library (system mode only)
+# ======================================================================
+if(DMOD_SYSTEM)
+    add_library(${MODULE_NAME} STATIC
+        src/dmosi.c
     )
 
-# Enable coverage for dmosi library if requested
-if(ENABLE_COVERAGE)
-    target_compile_options(${MODULE_NAME} PRIVATE --coverage)
-    target_link_options(${MODULE_NAME} PRIVATE --coverage)
-endif()
+    target_compile_definitions(${MODULE_NAME} 
+        PRIVATE 
+            $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API}>:DMOSI_DONT_IMPLEMENT_DMOD_API>
+            $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX}>:DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX>
+            $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_ENV}>:DMOSI_DONT_IMPLEMENT_DMOD_API_ENV>
+            $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_PROC}>:DMOSI_DONT_IMPLEMENT_DMOD_API_PROC>
+            $<$<BOOL:${DMOSI_DONT_IMPLEMENT_DMOD_API_TIME}>:DMOSI_DONT_IMPLEMENT_DMOD_API_TIME>
+            DMOSI_VERSION="${PROJECT_VERSION}"
+    )
 
-create_library_makefile(${MODULE_NAME})
+    target_include_directories(${MODULE_NAME} 
+        PUBLIC 
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )   
+
+    target_link_libraries(${MODULE_NAME} 
+        PRIVATE    
+            dmod_inc
+        )
+
+    # Enable coverage for dmosi library if requested
+    if(ENABLE_COVERAGE)
+        target_compile_options(${MODULE_NAME} PRIVATE --coverage)
+        target_link_options(${MODULE_NAME} PRIVATE --coverage)
+    endif()
+
+    create_library_makefile(${MODULE_NAME})
+endif()
 
 # ======================================================================
 #               Tests
