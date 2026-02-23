@@ -673,4 +673,25 @@ Dmod_Pid_t Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
 
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_PROC
 
+//==============================================================================
+//                              DMOD Time API Implementation
+//==============================================================================
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_TIME)
 
+/**
+ * @brief DMOD uptime implementation using DMOSI
+ *
+ * This implementation provides the DMOD GetUptime API using the underlying
+ * DMOSI tick-count operation. It is only compiled when DMOSI_DONT_IMPLEMENT_DMOD_API
+ * and DMOSI_DONT_IMPLEMENT_DMOD_API_TIME are not defined.
+ *
+ * @note The tick count is assumed to represent milliseconds, which is the
+ *       typical RTOS configuration (1 ms per tick).
+ */
+
+Dmod_Timestamp_t Dmod_GetUptime(void)
+{
+    return (Dmod_Timestamp_t)dmosi_get_tick_count();
+}
+
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_TIME
