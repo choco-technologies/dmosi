@@ -33,6 +33,16 @@ DMOD_BUILTIN_API( dmosi, 1.0, bool, _init,   (void) );
  */
 DMOD_BUILTIN_API( dmosi, 1.0, bool, _deinit, (void) );
 
+/**
+ * @brief Check if the RTOS has already started
+ *
+ * This function returns true if the RTOS scheduler has been started,
+ * or false if it has not yet been started.
+ *
+ * @return bool true if the RTOS has started, false otherwise
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, bool, _is_started, (void) );
+
 //==============================================================================
 //                              MUTEX API
 //==============================================================================
