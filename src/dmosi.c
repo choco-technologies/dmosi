@@ -15,6 +15,11 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _deinit, (void) )
     return false;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _is_started, (void) )
+{
+    return false;
+}
+
 //==============================================================================
 //                              MUTEX API
 //==============================================================================
