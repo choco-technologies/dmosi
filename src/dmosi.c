@@ -447,6 +447,33 @@ int Dmod_Mutex_Unlock(void* mutex)
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX
 
 //==============================================================================
+//                              DMOD Semaphore API Implementation
+//==============================================================================
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API)
+
+void* Dmod_Semaphore_New(uint32_t InitialValue)
+{
+    return (void*)dmosi_semaphore_create(InitialValue, UINT32_MAX);
+}
+
+int Dmod_Semaphore_Wait(void* Semaphore)
+{
+    return dmosi_semaphore_wait((dmosi_semaphore_t)Semaphore, -1);
+}
+
+int Dmod_Semaphore_Post(void* Semaphore)
+{
+    return dmosi_semaphore_post((dmosi_semaphore_t)Semaphore);
+}
+
+void Dmod_Semaphore_Delete(void* Semaphore)
+{
+    dmosi_semaphore_destroy((dmosi_semaphore_t)Semaphore);
+}
+
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API
+
+//==============================================================================
 //                              DMOD Environment API Implementation
 //==============================================================================
 #if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API) && !defined(DMOSI_DONT_IMPLEMENT_DMOD_API_ENV)
