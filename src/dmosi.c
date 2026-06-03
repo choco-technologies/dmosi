@@ -48,28 +48,30 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _mutex_unlock,    (dmosi_mutex
 //==============================================================================
 //                              Semaphore API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_semaphore_t, _semaphore_create,  (uint32_t initial_count, uint32_t max_count) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, dmosi_semaphore_t, _semaphore_create,  (uint32_t initial_count, uint32_t max_count) )
 {
     (void)initial_count;
     (void)max_count;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _semaphore_destroy, (dmosi_semaphore_t semaphore) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, void, _semaphore_destroy, (dmosi_semaphore_t semaphore) )
 {
     (void)semaphore;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_wait,    (dmosi_semaphore_t semaphore, int32_t timeout_ms) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, int, _semaphore_wait,    (dmosi_semaphore_t semaphore, uint32_t count, int32_t timeout_ms) )
 {
     (void)semaphore;
+    (void)count;
     (void)timeout_ms;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_post,    (dmosi_semaphore_t semaphore) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, int, _semaphore_post,    (dmosi_semaphore_t semaphore, uint32_t count) )
 {
     (void)semaphore;
+    (void)count;
     return -ENOSYS;
 }
 
@@ -451,19 +453,19 @@ int Dmod_Mutex_Unlock(void* mutex)
 //==============================================================================
 #if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API)
 
-void* Dmod_Semaphore_New(uint32_t InitialValue)
+void* Dmod_Semaphore_New(uint32_t InitialValue, uint32_t MaxCount)
 {
-    return (void*)dmosi_semaphore_create(InitialValue, UINT32_MAX);
+    return (void*)dmosi_semaphore_create(InitialValue, MaxCount);
 }
 
-int Dmod_Semaphore_Wait(void* Semaphore)
+int Dmod_Semaphore_Wait(void* Semaphore, uint32_t Count)
 {
-    return dmosi_semaphore_wait((dmosi_semaphore_t)Semaphore, -1);
+    return dmosi_semaphore_wait((dmosi_semaphore_t)Semaphore, Count, -1);
 }
 
-int Dmod_Semaphore_Post(void* Semaphore)
+int Dmod_Semaphore_Post(void* Semaphore, uint32_t Count)
 {
-    return dmosi_semaphore_post((dmosi_semaphore_t)Semaphore);
+    return dmosi_semaphore_post((dmosi_semaphore_t)Semaphore, Count);
 }
 
 void Dmod_Semaphore_Delete(void* Semaphore)
