@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.10)
 #               DMOD OSI
 # ======================================================================
 project(dmosi
-    VERSION 1.0
+    VERSION 2.0
     DESCRIPTION "DMOD Operating System Interface"
     LANGUAGES C CXX)
 

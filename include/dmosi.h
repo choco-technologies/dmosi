@@ -568,18 +568,20 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,              _semaphore_destroy, (dmosi_sema
  * @brief Wait on a semaphore (decrement)
  *
  * @param semaphore Semaphore handle
+ * @param count Number of semaphore units to take
  * @param timeout_ms Timeout in milliseconds (0 = no wait, -1 = wait forever)
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,               _semaphore_wait,    (dmosi_semaphore_t semaphore, int32_t timeout_ms) );
+DMOD_BUILTIN_API( dmosi, 2.0, int,               _semaphore_wait,    (dmosi_semaphore_t semaphore, uint32_t count, int32_t timeout_ms) );
 
 /**
  * @brief Post to a semaphore (increment)
  *
  * @param semaphore Semaphore handle
+ * @param count Number of semaphore units to release
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,               _semaphore_post,    (dmosi_semaphore_t semaphore) );
+DMOD_BUILTIN_API( dmosi, 2.0, int,               _semaphore_post,    (dmosi_semaphore_t semaphore, uint32_t count) );
 
 /** @} */ // end of DMOSI_SEMAPHORE_API
 

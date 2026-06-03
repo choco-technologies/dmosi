@@ -60,16 +60,18 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _semaphore_destroy, (dmosi_se
     (void)semaphore;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_wait,    (dmosi_semaphore_t semaphore, int32_t timeout_ms) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, int, _semaphore_wait,    (dmosi_semaphore_t semaphore, uint32_t count, int32_t timeout_ms) )
 {
     (void)semaphore;
+    (void)count;
     (void)timeout_ms;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _semaphore_post,    (dmosi_semaphore_t semaphore) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, int, _semaphore_post,    (dmosi_semaphore_t semaphore, uint32_t count) )
 {
     (void)semaphore;
+    (void)count;
     return -ENOSYS;
 }
 
@@ -445,6 +447,33 @@ int Dmod_Mutex_Unlock(void* mutex)
 }
 
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX
+
+//==============================================================================
+//                              DMOD Semaphore API Implementation
+//==============================================================================
+#if !defined(DMOSI_DONT_IMPLEMENT_DMOD_API)
+
+void* Dmod_Semaphore_New(uint32_t InitialValue, uint32_t MaxCount)
+{
+    return (void*)dmosi_semaphore_create(InitialValue, MaxCount);
+}
+
+int Dmod_Semaphore_Wait(void* Semaphore, uint32_t Count)
+{
+    return dmosi_semaphore_wait((dmosi_semaphore_t)Semaphore, Count, -1);
+}
+
+int Dmod_Semaphore_Post(void* Semaphore, uint32_t Count)
+{
+    return dmosi_semaphore_post((dmosi_semaphore_t)Semaphore, Count);
+}
+
+void Dmod_Semaphore_Delete(void* Semaphore)
+{
+    dmosi_semaphore_destroy((dmosi_semaphore_t)Semaphore);
+}
+
+#endif // !DMOSI_DONT_IMPLEMENT_DMOD_API
 
 //==============================================================================
 //                              DMOD Environment API Implementation
