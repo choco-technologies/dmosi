@@ -24,8 +24,8 @@ Thread synchronization through mutual exclusion locks:
 Counting semaphores for resource management:
 - `dmosi_semaphore_create()` - Create a semaphore with initial and max counts
 - `dmosi_semaphore_destroy()` - Destroy a semaphore
-- `dmosi_semaphore_wait()` - Wait on a semaphore (with timeout)
-- `dmosi_semaphore_post()` - Post to a semaphore
+- `dmosi_semaphore_wait()` - Wait on a semaphore (take count with timeout)
+- `dmosi_semaphore_post()` - Post to a semaphore (release count)
 
 ### 3. **Thread API**
 Thread creation and management:

@@ -555,14 +555,14 @@ typedef struct dmosi_semaphore* dmosi_semaphore_t;
  * @param max_count Maximum count for the semaphore
  * @return dmosi_semaphore_t Created semaphore handle, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 2.0, dmosi_semaphore_t, _semaphore_create,  (uint32_t initial_count, uint32_t max_count) );
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_semaphore_t, _semaphore_create,  (uint32_t initial_count, uint32_t max_count) );
 
 /**
  * @brief Destroy a semaphore
  *
  * @param semaphore Semaphore handle to destroy
  */
-DMOD_BUILTIN_API( dmosi, 2.0, void,              _semaphore_destroy, (dmosi_semaphore_t semaphore) );
+DMOD_BUILTIN_API( dmosi, 1.0, void,              _semaphore_destroy, (dmosi_semaphore_t semaphore) );
 
 /**
  * @brief Wait on a semaphore (decrement)

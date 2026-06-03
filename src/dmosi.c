@@ -48,14 +48,14 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _mutex_unlock,    (dmosi_mutex
 //==============================================================================
 //                              Semaphore API
 //==============================================================================
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, dmosi_semaphore_t, _semaphore_create,  (uint32_t initial_count, uint32_t max_count) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_semaphore_t, _semaphore_create,  (uint32_t initial_count, uint32_t max_count) )
 {
     (void)initial_count;
     (void)max_count;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 2.0, void, _semaphore_destroy, (dmosi_semaphore_t semaphore) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _semaphore_destroy, (dmosi_semaphore_t semaphore) )
 {
     (void)semaphore;
 }
