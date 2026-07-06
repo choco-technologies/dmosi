@@ -276,6 +276,58 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (d
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stdin,   (dmosi_process_t process, const char* path) )
+{
+    (void)process;
+    (void)path;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stdin,   (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stdout,  (dmosi_process_t process, const char* path) )
+{
+    (void)process;
+    (void)path;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stdout,  (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stderr,  (dmosi_process_t process, const char* path) )
+{
+    (void)process;
+    (void)path;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stderr,  (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stdlog,  (dmosi_process_t process, const char* path) )
+{
+    (void)process;
+    (void)path;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stdlog,  (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_find_by_name, (const char* name) )
 {
     (void)name;

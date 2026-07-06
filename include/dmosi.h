@@ -293,6 +293,80 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_pwd,   (dmosi_process
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmosi_process_t process) );
 
 /**
+ * @brief Set process standard input file path
+ *
+ * @param process Process handle
+ * @param path Path to the file to use as standard input
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stdin,   (dmosi_process_t process, const char* path) );
+
+/**
+ * @brief Get process standard input file path
+ *
+ * @param process Process handle
+ * @return const char* Path to the standard input file, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stdin,   (dmosi_process_t process) );
+
+/**
+ * @brief Set process standard output file path
+ *
+ * @param process Process handle
+ * @param path Path to the file to use as standard output
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stdout,  (dmosi_process_t process, const char* path) );
+
+/**
+ * @brief Get process standard output file path
+ *
+ * @param process Process handle
+ * @return const char* Path to the standard output file, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stdout,  (dmosi_process_t process) );
+
+/**
+ * @brief Set process standard error file path
+ *
+ * @param process Process handle
+ * @param path Path to the file to use as standard error
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stderr,  (dmosi_process_t process, const char* path) );
+
+/**
+ * @brief Get process standard error file path
+ *
+ * @param process Process handle
+ * @return const char* Path to the standard error file, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stderr,  (dmosi_process_t process) );
+
+/**
+ * @brief Set process standard log file path
+ *
+ * The standard log is the file to which the process's logs are written
+ * by default.
+ *
+ * @param process Process handle
+ * @param path Path to the file to use as standard log
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stdlog,  (dmosi_process_t process, const char* path) );
+
+/**
+ * @brief Get process standard log file path
+ *
+ * The standard log is the file to which the process's logs are written
+ * by default.
+ *
+ * @param process Process handle
+ * @return const char* Path to the standard log file, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stdlog,  (dmosi_process_t process) );
+
+/**
  * @brief Find a process by name
  *
  * @param name Process name to search for
