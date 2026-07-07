@@ -276,56 +276,33 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (d
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stdin,   (dmosi_process_t process, const char* path) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stream,   (dmosi_process_t process, dmosi_stream_index_t index, const char* path) )
 {
     (void)process;
+    (void)index;
     (void)path;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stdin,   (dmosi_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void*, _process_get_stream,   (dmosi_process_t process, dmosi_stream_index_t index) )
 {
     (void)process;
+    (void)index;
     return NULL;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stdout,  (dmosi_process_t process, const char* path) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_lock_stream,  (dmosi_process_t process, dmosi_stream_index_t index) )
 {
     (void)process;
-    (void)path;
+    (void)index;
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stdout,  (dmosi_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_unlock_stream, (dmosi_process_t process, dmosi_stream_index_t index) )
 {
     (void)process;
-    return NULL;
-}
-
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stderr,  (dmosi_process_t process, const char* path) )
-{
-    (void)process;
-    (void)path;
+    (void)index;
     return -ENOSYS;
-}
-
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stderr,  (dmosi_process_t process) )
-{
-    (void)process;
-    return NULL;
-}
-
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_stdlog,  (dmosi_process_t process, const char* path) )
-{
-    (void)process;
-    (void)path;
-    return -ENOSYS;
-}
-
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stdlog,  (dmosi_process_t process) )
-{
-    (void)process;
-    return NULL;
 }
 
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_find_by_name, (const char* name) )
@@ -756,6 +733,95 @@ Dmod_Pid_t Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
 {
     // Spawn with NULL parent (detached)
     return dmod_spawn_module_internal(Context, argc, argv, NULL);
+}
+
+/**
+ * @brief Translate a DMOD standard stream handle to a DMOSI stream index
+ *
+ * @param StdHandle One of DMOD_STDIN/DMOD_STDOUT/DMOD_STDERR/DMOD_STDLOG
+ * @param Index Output stream index, valid only when this function returns true
+ * @return bool true if StdHandle is a well-known standard stream handle
+ */
+static bool dmod_resolve_stream_index(void* StdHandle, dmosi_stream_index_t* Index)
+{
+    if (StdHandle == DMOD_STDIN) {
+        *Index = DMOSI_STREAM_STDIN;
+    } else if (StdHandle == DMOD_STDOUT) {
+        *Index = DMOSI_STREAM_STDOUT;
+    } else if (StdHandle == DMOD_STDERR) {
+        *Index = DMOSI_STREAM_STDERR;
+    } else if (StdHandle == DMOD_STDLOG) {
+        *Index = DMOSI_STREAM_STDLOG;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+Dmod_Pid_t Dmod_GetCurrentPid(void)
+{
+    dmosi_process_t current_process = dmosi_process_current();
+    if (current_process == NULL) {
+        return (Dmod_Pid_t)-ENOSYS;
+    }
+    return (Dmod_Pid_t)dmosi_process_get_id(current_process);
+}
+
+void* Dmod_ResolveStreamFile(Dmod_Pid_t Pid, void* StdHandle)
+{
+    dmosi_stream_index_t index;
+    if (!dmod_resolve_stream_index(StdHandle, &index)) {
+        // Not a well-known standard stream handle: pass it through unchanged
+        return StdHandle;
+    }
+
+    dmosi_process_t process = dmosi_process_find_by_id((dmosi_process_id_t)Pid);
+    if (process == NULL) {
+        return NULL;
+    }
+
+    return dmosi_process_get_stream(process, index);
+}
+
+int Dmod_SetStreamFilePath(Dmod_Pid_t Pid, void* StdHandle, const char* Path)
+{
+    dmosi_stream_index_t index;
+    if (!dmod_resolve_stream_index(StdHandle, &index)) {
+        return -EINVAL;
+    }
+
+    dmosi_process_t process = dmosi_process_find_by_id((dmosi_process_id_t)Pid);
+    if (process == NULL) {
+        return -ESRCH;
+    }
+
+    return dmosi_process_set_stream(process, index, Path);
+}
+
+void* Dmod_LockStdio(void* StdHandle)
+{
+    dmosi_stream_index_t index;
+    if (dmod_resolve_stream_index(StdHandle, &index)) {
+        dmosi_process_t current_process = dmosi_process_current();
+        if (current_process == NULL || dmosi_process_lock_stream(current_process, index) != 0) {
+            return NULL;
+        }
+        return dmosi_process_get_stream(current_process, index);
+    }
+
+    // Not a well-known standard stream handle: nothing to lock, pass it through unchanged
+    return StdHandle;
+}
+
+void Dmod_UnlockStdio(void* StdHandle)
+{
+    dmosi_stream_index_t index;
+    if (dmod_resolve_stream_index(StdHandle, &index)) {
+        dmosi_process_t current_process = dmosi_process_current();
+        if (current_process != NULL) {
+            dmosi_process_unlock_stream(current_process, index);
+        }
+    }
 }
 
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_PROC

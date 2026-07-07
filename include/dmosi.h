@@ -293,78 +293,63 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_pwd,   (dmosi_process
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmosi_process_t process) );
 
 /**
- * @brief Set process standard input file path
+ * @brief Well-known stream slot indices for a process
+ *
+ * These indices identify the standard stream slots that every process has.
+ * Additional, implementation-specific slots may be addressed with indices
+ * beyond @c DMOSI_STREAM_STDLOG.
+ */
+typedef enum {
+    DMOSI_STREAM_STDIN  = 0, /**< Standard input */
+    DMOSI_STREAM_STDOUT = 1, /**< Standard output */
+    DMOSI_STREAM_STDERR = 2, /**< Standard error */
+    DMOSI_STREAM_STDLOG = 3  /**< Standard log, used for the process's default log output */
+} dmosi_stream_index_t;
+
+/**
+ * @brief Set a process stream slot to the file at the given path
  *
  * @param process Process handle
- * @param path Path to the file to use as standard input
+ * @param index Stream slot to set (see dmosi_stream_index_t for well-known slots)
+ * @param path Path to the file to bind to the stream slot
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stdin,   (dmosi_process_t process, const char* path) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stream,   (dmosi_process_t process, dmosi_stream_index_t index, const char* path) );
 
 /**
- * @brief Get process standard input file path
+ * @brief Get the file handle bound to a process stream slot
  *
  * @param process Process handle
- * @return const char* Path to the standard input file, NULL on failure
+ * @param index Stream slot to query (see dmosi_stream_index_t for well-known slots)
+ * @return void* File handle bound to the stream slot, NULL on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stdin,   (dmosi_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, void*,           _process_get_stream,   (dmosi_process_t process, dmosi_stream_index_t index) );
 
 /**
- * @brief Set process standard output file path
+ * @brief Lock a process stream slot for exclusive access
+ *
+ * Fails if the slot is already locked. Implementations must use an
+ * interrupt-safe primitive (e.g. an atomic compare-and-swap or a critical
+ * section), not a mutex, since this function must be callable from
+ * interrupt context.
  *
  * @param process Process handle
- * @param path Path to the file to use as standard output
+ * @param index Stream slot to lock (see dmosi_stream_index_t for well-known slots)
+ * @return int 0 on success, negative error code if already locked or on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,             _process_lock_stream,  (dmosi_process_t process, dmosi_stream_index_t index) );
+
+/**
+ * @brief Unlock a previously locked process stream slot
+ *
+ * Implementations must use an interrupt-safe primitive, not a mutex, since
+ * this function must be callable from interrupt context.
+ *
+ * @param process Process handle
+ * @param index Stream slot to unlock (see dmosi_stream_index_t for well-known slots)
  * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stdout,  (dmosi_process_t process, const char* path) );
-
-/**
- * @brief Get process standard output file path
- *
- * @param process Process handle
- * @return const char* Path to the standard output file, NULL on failure
- */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stdout,  (dmosi_process_t process) );
-
-/**
- * @brief Set process standard error file path
- *
- * @param process Process handle
- * @param path Path to the file to use as standard error
- * @return int 0 on success, negative error code on failure
- */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stderr,  (dmosi_process_t process, const char* path) );
-
-/**
- * @brief Get process standard error file path
- *
- * @param process Process handle
- * @return const char* Path to the standard error file, NULL on failure
- */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stderr,  (dmosi_process_t process) );
-
-/**
- * @brief Set process standard log file path
- *
- * The standard log is the file to which the process's logs are written
- * by default.
- *
- * @param process Process handle
- * @param path Path to the file to use as standard log
- * @return int 0 on success, negative error code on failure
- */
-DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stdlog,  (dmosi_process_t process, const char* path) );
-
-/**
- * @brief Get process standard log file path
- *
- * The standard log is the file to which the process's logs are written
- * by default.
- *
- * @param process Process handle
- * @return const char* Path to the standard log file, NULL on failure
- */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_stdlog,  (dmosi_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,             _process_unlock_stream, (dmosi_process_t process, dmosi_stream_index_t index) );
 
 /**
  * @brief Find a process by name
