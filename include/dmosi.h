@@ -300,10 +300,11 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmosi_process
  * beyond @c DMOSI_STREAM_STDLOG.
  */
 typedef enum {
-    DMOSI_STREAM_STDIN  = 0, /**< Standard input */
-    DMOSI_STREAM_STDOUT = 1, /**< Standard output */
-    DMOSI_STREAM_STDERR = 2, /**< Standard error */
-    DMOSI_STREAM_STDLOG = 3  /**< Standard log, used for the process's default log output */
+    DMOSI_STREAM_STDIN,     /**< Standard input */
+    DMOSI_STREAM_STDOUT,    /**< Standard output */
+    DMOSI_STREAM_STDERR,    /**< Standard error */
+    DMOSI_STREAM_STDLOG,    /**< Standard log, used for the process's default log output */
+    DMOSI_STREAM_COUNT
 } dmosi_stream_index_t;
 
 /**
