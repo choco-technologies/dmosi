@@ -259,17 +259,27 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_module_name, (dmosi_p
 DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_module_name, (dmosi_process_t process, const char* module_name) );
 
 /**
- * @brief Get the name used to attribute this process's heap allocations to its owner
+ * @brief Associate a process with the Dmod_Context_t it is running
  *
- * Unlike the module name (which repeats whenever the same module is loaded more than
- * once, e.g. a shell spawning another instance of itself), this is meant to be unique
- * per process instance - allocation tracking keys off it, including bulk-freeing all of
- * a module's memory on unload, so two live processes must never share one.
+ * Set once at spawn time (see Dmod_SpawnModule/Dmod_RunModuleDetached), before the process's
+ * own thread starts executing. Lets Dmod_GetCurrentContext() report which context is currently
+ * running when called from that process - the context already carries its own per-instance
+ * unique allocator name (see Dmod_GetCurrentAllocatorNameEx), so there is no need to duplicate
+ * that identity on the process itself.
  *
  * @param process Process handle
- * @return const char* Allocator name for the process, NULL on failure
+ * @param context Dmod_Context_t the process is running (borrowed pointer, not owned)
+ * @return int 0 on success, negative error code on failure
  */
-DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_allocator_name, (dmosi_process_t process) );
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_context, (dmosi_process_t process, Dmod_Context_t* context) );
+
+/**
+ * @brief Get the Dmod_Context_t a process was linked to via dmosi_process_set_context
+ *
+ * @param process Process handle
+ * @return Dmod_Context_t* Linked context, or NULL if none was ever set
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, Dmod_Context_t*, _process_get_context, (dmosi_process_t process) );
 
 /**
  * @brief Set process user ID

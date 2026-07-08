@@ -250,7 +250,14 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_module_name, (dmo
     return -ENOSYS;
 }
 
-DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_allocator_name, (dmosi_process_t process) )
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_context, (dmosi_process_t process, Dmod_Context_t* context) )
+{
+    (void)process;
+    (void)context;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, Dmod_Context_t*, _process_get_context, (dmosi_process_t process) )
 {
     (void)process;
     return NULL;
@@ -546,17 +553,21 @@ const char* Dmod_GetCurrentModuleNameEx(const char* Default)
     return Default;
 }
 
-const char* Dmod_GetCurrentAllocatorNameEx(const char* Default)
+/**
+ * @brief DMOD GetCurrentContext API implementation using DMOSI
+ *
+ * Resolves the current thread's associated process, then returns the Dmod_Context_t it was
+ * linked to via dmosi_process_set_context() at spawn time (see dmod_spawn_module_internal).
+ * Dmod_GetCurrentAllocatorNameEx()'s own (weak, dmod-side) implementation reads the context's
+ * AllocatorName off of this - no need to duplicate that logic here.
+ */
+Dmod_Context_t* Dmod_GetCurrentContext(void)
 {
-    // Get the allocator name (process name + PID) from the current thread's associated process
     dmosi_process_t current_process = dmosi_process_current();
     if (current_process != NULL) {
-        const char* allocator_name = dmosi_process_get_allocator_name(current_process);
-        if (allocator_name != NULL) {
-            return allocator_name;
-        }
+        return dmosi_process_get_context(current_process);
     }
-    return Default;
+    return NULL;
 }
 
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_ENV
@@ -731,6 +742,11 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
         DMOD_LOG_ERROR("Failed to create process for module '%s'\n", module_name);
         return -ENOMEM;
     }
+
+    // Link the process to the context it is about to run, before its thread starts executing -
+    // this lets Dmod_GetCurrentContext() (and through it, Dmod_GetCurrentAllocatorNameEx())
+    // resolve correctly from the very first Dmod_Malloc call the module's own code makes.
+    dmosi_process_set_context(new_process, Context);
 
     // Apply requested stream redirections before starting the module thread
     int stream_result = dmod_apply_stream_redirections(new_process, module_name, Streams);
