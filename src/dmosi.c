@@ -605,6 +605,61 @@ static void dmod_spawn_thread_entry(void* arg)
 }
 
 /**
+ * @brief Translate a DMOD standard stream handle to a DMOSI stream index
+ *
+ * @param StdHandle One of DMOD_STDIN/DMOD_STDOUT/DMOD_STDERR/DMOD_STDLOG
+ * @param Index Output stream index, valid only when this function returns true
+ * @return bool true if StdHandle is a well-known standard stream handle
+ */
+static bool dmod_resolve_stream_index(void* StdHandle, dmosi_stream_index_t* Index)
+{
+    if (StdHandle == DMOD_STDIN) {
+        *Index = DMOSI_STREAM_STDIN;
+    } else if (StdHandle == DMOD_STDOUT) {
+        *Index = DMOSI_STREAM_STDOUT;
+    } else if (StdHandle == DMOD_STDERR) {
+        *Index = DMOSI_STREAM_STDERR;
+    } else if (StdHandle == DMOD_STDLOG) {
+        *Index = DMOSI_STREAM_STDLOG;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Apply the requested stream redirections to a freshly created process
+ *
+ * @param process Process to configure
+ * @param module_name Module name, used for error logging only
+ * @param Streams Stream redirections to apply, may be NULL or empty
+ * @return int 0 on success, negative error code on failure
+ */
+static int dmod_apply_stream_redirections(dmosi_process_t process, const char* module_name, const Dmod_StreamRedirections_t* Streams)
+{
+    if (Streams == NULL) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < Streams->Count; i++) {
+        const Dmod_StreamRedirection_t* entry = &Streams->Entries[i];
+
+        dmosi_stream_index_t index;
+        if (!dmod_resolve_stream_index(entry->StdHandle, &index)) {
+            DMOD_LOG_ERROR("Failed to spawn module '%s': unknown stream handle at index %zu\n", module_name, i);
+            return -EINVAL;
+        }
+
+        if (dmosi_process_set_stream(process, index, entry->Path) != 0) {
+            DMOD_LOG_ERROR("Failed to spawn module '%s': could not redirect stream %d\n", module_name, (int)index);
+            return -EIO;
+        }
+    }
+
+    return 0;
+}
+
+/**
  * @brief Helper function to spawn a module in a new process/thread
  *
  * This internal function handles the common logic for both Spawn and RunDetached.
@@ -613,9 +668,10 @@ static void dmod_spawn_thread_entry(void* arg)
  * @param argc Number of arguments
  * @param argv Argument array
  * @param parent Parent process (NULL for detached, current for spawn)
+ * @param Streams Stream redirections to apply to the new process, or NULL if none are needed
  * @return Dmod_Pid_t Process ID on success, negative error code on failure
  */
-static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, char* argv[], dmosi_process_t parent)
+static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, char* argv[], dmosi_process_t parent, const Dmod_StreamRedirections_t* Streams)
 {
     if (Context == NULL) {
         DMOD_LOG_ERROR("Failed to spawn module: Context is NULL\n");
@@ -636,6 +692,13 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     if (new_process == NULL) {
         DMOD_LOG_ERROR("Failed to create process for module '%s'\n", module_name);
         return -ENOMEM;
+    }
+
+    // Apply requested stream redirections before starting the module thread
+    int stream_result = dmod_apply_stream_redirections(new_process, module_name, Streams);
+    if (stream_result != 0) {
+        dmosi_process_destroy(new_process);
+        return (Dmod_Pid_t)stream_result;
     }
 
     // Get process ID
@@ -701,16 +764,17 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
  * @param Context Module context to spawn
  * @param argc Number of arguments
  * @param argv Argument array (MUST remain valid for the lifetime of the module execution)
+ * @param Streams Stream redirections to apply to the spawned process, or NULL if none are needed
  * @return Dmod_Pid_t Process ID on success, negative error code on failure
- * 
+ *
  * @warning The argv array and its contents must remain valid for the entire duration
  *          of the module's execution.
  */
-Dmod_Pid_t Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
+Dmod_Pid_t Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[], const Dmod_StreamRedirections_t* Streams)
 {
     // Spawn with current process as parent
     dmosi_process_t current_process = dmosi_process_current();
-    return dmod_spawn_module_internal(Context, argc, argv, current_process);
+    return dmod_spawn_module_internal(Context, argc, argv, current_process, Streams);
 }
 
 /**
@@ -723,39 +787,17 @@ Dmod_Pid_t Dmod_Spawn(Dmod_Context_t* Context, int argc, char* argv[])
  * @param Context Module context to run detached
  * @param argc Number of arguments
  * @param argv Argument array (MUST remain valid for the lifetime of the module execution)
+ * @param Streams Stream redirections to apply to the detached process, or NULL if none are needed
  * @return Dmod_Pid_t Process ID on success, negative error code on failure
- * 
+ *
  * @warning The argv array and its contents must remain valid for the entire duration
  *          of the module's execution since this function returns immediately while
  *          the module runs in a detached process/thread.
  */
-Dmod_Pid_t Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[])
+Dmod_Pid_t Dmod_RunDetached(Dmod_Context_t* Context, int argc, char* argv[], const Dmod_StreamRedirections_t* Streams)
 {
     // Spawn with NULL parent (detached)
-    return dmod_spawn_module_internal(Context, argc, argv, NULL);
-}
-
-/**
- * @brief Translate a DMOD standard stream handle to a DMOSI stream index
- *
- * @param StdHandle One of DMOD_STDIN/DMOD_STDOUT/DMOD_STDERR/DMOD_STDLOG
- * @param Index Output stream index, valid only when this function returns true
- * @return bool true if StdHandle is a well-known standard stream handle
- */
-static bool dmod_resolve_stream_index(void* StdHandle, dmosi_stream_index_t* Index)
-{
-    if (StdHandle == DMOD_STDIN) {
-        *Index = DMOSI_STREAM_STDIN;
-    } else if (StdHandle == DMOD_STDOUT) {
-        *Index = DMOSI_STREAM_STDOUT;
-    } else if (StdHandle == DMOD_STDERR) {
-        *Index = DMOSI_STREAM_STDERR;
-    } else if (StdHandle == DMOD_STDLOG) {
-        *Index = DMOSI_STREAM_STDLOG;
-    } else {
-        return false;
-    }
-    return true;
+    return dmod_spawn_module_internal(Context, argc, argv, NULL, Streams);
 }
 
 Dmod_Pid_t Dmod_GetCurrentPid(void)
