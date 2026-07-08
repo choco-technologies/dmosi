@@ -250,6 +250,12 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_module_name, (dmo
     return -ENOSYS;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_allocator_name, (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_uid,   (dmosi_process_t process, dmosi_user_id_t uid) )
 {
     (void)process;
@@ -540,6 +546,19 @@ const char* Dmod_GetCurrentModuleNameEx(const char* Default)
     return Default;
 }
 
+const char* Dmod_GetCurrentAllocatorNameEx(const char* Default)
+{
+    // Get the allocator name (process name + PID) from the current thread's associated process
+    dmosi_process_t current_process = dmosi_process_current();
+    if (current_process != NULL) {
+        const char* allocator_name = dmosi_process_get_allocator_name(current_process);
+        if (allocator_name != NULL) {
+            return allocator_name;
+        }
+    }
+    return Default;
+}
+
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API && !DMOSI_DONT_IMPLEMENT_DMOD_API_ENV
 
 //==============================================================================
@@ -601,10 +620,22 @@ static void dmod_spawn_thread_entry(void* arg)
     if (spawn_args != NULL && spawn_args->context != NULL) {
         // Run the module and get result
         int result = Dmod_Run(spawn_args->context, spawn_args->argc, spawn_args->argv);
-        
+
+        // This thread owns unloading the context: the caller that spawned us (see
+        // Dmod_SpawnModule/Dmod_RunModuleDetached) deliberately does not unload it
+        // itself, since Dmod_Unload(..., false) only unloads when the module isn't
+        // marked Running - and Dmod_Run() is what marks it Running, which only
+        // happens once this thread actually starts executing. Unloading from the
+        // caller right after spawning (before the scheduler necessarily gave this
+        // thread any time to run) would see Running still false and destroy the
+        // context out from under a module that hasn't run yet. By the time we get
+        // here, Dmod_Run() has already cleared Running back to false on its way out,
+        // so this unload is always safe.
+        Dmod_Unload(spawn_args->context, false);
+
         // Free the structure before exiting (Exit never returns)
         Dmod_Free(spawn_args);
-        
+
         // Exit the process with the result code
         // This allows Dmod_GetProcessResult to retrieve the exit status
         Dmod_Exit(result);

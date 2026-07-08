@@ -259,6 +259,19 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_module_name, (dmosi_p
 DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_module_name, (dmosi_process_t process, const char* module_name) );
 
 /**
+ * @brief Get the name used to attribute this process's heap allocations to its owner
+ *
+ * Unlike the module name (which repeats whenever the same module is loaded more than
+ * once, e.g. a shell spawning another instance of itself), this is meant to be unique
+ * per process instance - allocation tracking keys off it, including bulk-freeing all of
+ * a module's memory on unload, so two live processes must never share one.
+ *
+ * @param process Process handle
+ * @return const char* Allocator name for the process, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_allocator_name, (dmosi_process_t process) );
+
+/**
  * @brief Set process user ID
  *
  * @param process Process handle
