@@ -904,10 +904,23 @@ void* Dmod_LockStdio(void* StdHandle)
     dmosi_stream_index_t index;
     if (dmod_resolve_stream_index(StdHandle, &index)) {
         dmosi_process_t current_process = dmosi_process_current();
-        if (current_process == NULL || dmosi_process_lock_stream(current_process, index) != 0) {
+        if (current_process == NULL) {
             return NULL;
         }
-        return dmosi_process_get_stream(current_process, index);
+
+        // Nothing to protect when the stream has no real file bound - the kernel-write/read
+        // fallback used in that case is designed to be safe without locking (raw,
+        // interrupt-safe syscalls). Only take the lock when there's an actual FILE* that a
+        // concurrent/re-entrant caller could otherwise race on.
+        void* handle = dmosi_process_get_stream(current_process, index);
+        if (handle == NULL) {
+            return NULL;
+        }
+
+        if (dmosi_process_lock_stream(current_process, index) != 0) {
+            return NULL;
+        }
+        return handle;
     }
 
     // Not a well-known standard stream handle: nothing to lock, pass it through unchanged
