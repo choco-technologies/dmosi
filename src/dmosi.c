@@ -291,6 +291,13 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void*, _process_get_stream,   (dmos
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_stream_path, (dmosi_process_t process, dmosi_stream_index_t index) )
+{
+    (void)process;
+    (void)index;
+    return NULL;
+}
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_lock_stream,  (dmosi_process_t process, dmosi_stream_index_t index) )
 {
     (void)process;
@@ -838,6 +845,58 @@ int Dmod_SetStreamFilePath(Dmod_Pid_t Pid, void* StdHandle, const char* Path)
     }
 
     return dmosi_process_set_stream(process, index, Path);
+}
+
+int Dmod_GetStreamRedirections(Dmod_Pid_t Pid, Dmod_StreamRedirection_t* OutEntries, size_t MaxEntries, size_t* OutCount)
+{
+    if (OutCount == NULL) {
+        return -EINVAL;
+    }
+    *OutCount = 0;
+
+    if (MaxEntries > 0 && OutEntries == NULL) {
+        return -EINVAL;
+    }
+
+    dmosi_process_t process = dmosi_process_find_by_id((dmosi_process_id_t)Pid);
+    if (process == NULL) {
+        return -ESRCH;
+    }
+
+    static void* const known_handles[DMOSI_STREAM_COUNT] = { DMOD_STDIN, DMOD_STDOUT, DMOD_STDERR, DMOD_STDLOG };
+
+    size_t count = 0;
+    for (dmosi_stream_index_t index = 0; index < DMOSI_STREAM_COUNT; index++) {
+        const char* path = dmosi_process_get_stream_path(process, index);
+        if (path == NULL) {
+            continue;
+        }
+        if (count >= MaxEntries) {
+            DMOD_LOG_ERROR("Dmod_GetStreamRedirections: OutEntries buffer too small (capacity %zu)\n", MaxEntries);
+            // Free whatever we already duplicated before bailing out
+            for (size_t i = 0; i < count; i++) {
+                Dmod_Free((void*)OutEntries[i].Path);
+            }
+            *OutCount = 0;
+            return -ENOSPC;
+        }
+
+        char* path_copy = Dmod_StrDup(path);
+        if (path_copy == NULL) {
+            for (size_t i = 0; i < count; i++) {
+                Dmod_Free((void*)OutEntries[i].Path);
+            }
+            *OutCount = 0;
+            return -ENOMEM;
+        }
+
+        OutEntries[count].StdHandle = known_handles[index];
+        OutEntries[count].Path      = path_copy;
+        count++;
+    }
+
+    *OutCount = count;
+    return 0;
 }
 
 void* Dmod_LockStdio(void* StdHandle)

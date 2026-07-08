@@ -308,11 +308,15 @@ typedef enum {
 } dmosi_stream_index_t;
 
 /**
- * @brief Set a process stream slot to the file at the given path
+ * @brief Set a process stream slot to the file at the given path, or clear it
+ *
+ * Passing path == NULL clears the slot's binding, reverting it back to its default,
+ * unbound state (implementation-defined fallback resolution applies again - e.g. the
+ * kernel debug stream on embedded targets, or the real stdio handle on hosted ones).
  *
  * @param process Process handle
  * @param index Stream slot to set (see dmosi_stream_index_t for well-known slots)
- * @param path Path to the file to bind to the stream slot
+ * @param path Path to the file to bind to the stream slot, or NULL to clear the binding
  * @return int 0 on success, negative error code on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stream,   (dmosi_process_t process, dmosi_stream_index_t index, const char* path) );
@@ -325,6 +329,22 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_stream,   (dmosi_proc
  * @return void* File handle bound to the stream slot, NULL on failure
  */
 DMOD_BUILTIN_API( dmosi, 1.0, void*,           _process_get_stream,   (dmosi_process_t process, dmosi_stream_index_t index) );
+
+/**
+ * @brief Get the path bound to a process stream slot, if any
+ *
+ * Unlike _process_get_stream (which returns the open file handle), this returns the
+ * path string that was passed to the most recent successful _process_set_stream call
+ * for this slot - the piece of information needed to back up a binding so it can later
+ * be restored exactly with _process_set_stream.
+ *
+ * @param process Process handle
+ * @param index Stream slot to query (see dmosi_stream_index_t for well-known slots)
+ * @return const char* Path bound to the slot (borrowed - do not free, and only valid
+ *         until the next _process_set_stream call on the same slot), or NULL if the
+ *         slot is currently unbound
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,     _process_get_stream_path, (dmosi_process_t process, dmosi_stream_index_t index) );
 
 /**
  * @brief Lock a process stream slot for exclusive access
