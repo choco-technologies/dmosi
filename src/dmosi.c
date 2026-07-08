@@ -644,6 +644,12 @@ static void dmod_spawn_thread_entry(void* arg)
         // so this unload is always safe.
         Dmod_Unload(spawn_args->context, false);
 
+        // Dmod_Unload just freed the context - clear the process's link to it so
+        // Dmod_GetCurrentContext() can never hand back a dangling pointer if anything
+        // queries it for this process again before dmosi_process_destroy() runs (which
+        // happens much later, at reap time, from a different thread).
+        dmosi_process_set_context(spawn_args->process, NULL);
+
         // Free the structure before exiting (Exit never returns)
         Dmod_Free(spawn_args);
 
