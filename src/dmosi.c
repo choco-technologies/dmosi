@@ -956,6 +956,14 @@ void* Dmod_LockStdio(void* StdHandle)
 {
     dmosi_stream_index_t index;
     if (dmod_resolve_stream_index(StdHandle, &index)) {
+        // Fault handlers set this before doing anything else (see Dmod_SetForceKernelWrite)
+        // specifically to skip dmosi_process_current() below - process/thread state may
+        // already be corrupted in that context, and resolving it can fault a second time.
+        // Returning NULL here routes the caller straight to its Dmod_WriteKernel fallback.
+        if (Dmod_IsForceKernelWrite()) {
+            return NULL;
+        }
+
         dmosi_process_t current_process = dmosi_process_current();
         if (current_process == NULL) {
             return NULL;
