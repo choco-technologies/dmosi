@@ -903,6 +903,30 @@ DMOD_BUILTIN_API( dmosi, 1.0, void, _syscall_handler,         (void) );
  */
 DMOD_BUILTIN_API( dmosi, 1.0, void, _tick_handler,            (void) );
 
+/**
+ * @brief Get the minimum hardware interrupt priority allowed to call dmosi API
+ *
+ * Returns the raw, hardware-encoded interrupt priority value that an
+ * interrupt service routine must be configured with (or a less urgent value)
+ * in order to safely call dmosi API functions from interrupt context.
+ *
+ * Interrupt priorities on architectures such as ARM Cortex-M are numeric,
+ * with a *lower* value meaning a *more* urgent (higher logical) priority. An
+ * ISR must therefore be configured with a priority value that is numerically
+ * greater than or equal to the value returned by this function - a
+ * numerically smaller (more urgent) priority is not maskable by the RTOS's
+ * critical sections and must never call dmosi API functions, not even ones
+ * documented as interrupt-safe.
+ *
+ * On FreeRTOS/ARM Cortex-M this corresponds to
+ * @c configMAX_SYSCALL_INTERRUPT_PRIORITY. Backends that have no such concept
+ * (e.g. POSIX) return 0, meaning any interrupt priority is safe to use.
+ *
+ * @return uint32_t Minimum (numerically) raw hardware priority value safe
+ *         for calling dmosi API from interrupt context
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, uint32_t, _get_min_interrupt_priority, (void) );
+
 /** @} */ // end of DMOSI_IRQ_API
 
 //==============================================================================

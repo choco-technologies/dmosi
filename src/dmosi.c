@@ -450,6 +450,11 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _tick_handler,            (vo
 {
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _get_min_interrupt_priority, (void) )
+{
+    return 0;
+}
+
 //==============================================================================
 //                              System Time API
 //==============================================================================
