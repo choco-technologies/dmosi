@@ -70,6 +70,7 @@ target_include_directories(dmosi_if
 if(DMOD_SYSTEM)
     add_library(${MODULE_NAME} STATIC
         src/dmosi.c
+        src/dmosi_registrations.c
     )
 
     target_compile_definitions(${MODULE_NAME} 
