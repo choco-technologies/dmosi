@@ -1,4 +1,5 @@
 #include <errno.h>
+#include "dmod.h"
 #include "dmosi.h"
 
 // Default values for spawned processes

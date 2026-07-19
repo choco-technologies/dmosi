@@ -6,6 +6,13 @@
 # Include directory with dmosi.h header
 inc=./include => ${destination}/${module}/include
 
+# === Static Library ===
+# Precompiled static library (architecture-specific build). Provides the weak
+# default fallback implementations (see DMOD_INPUT_WEAK_API_DECLARATION in
+# src/dmosi.c) that OSI backends such as dmosi-posix/dmosi-freertos don't
+# override themselves.
+lib=./lib/libdmosi.a => ${destination}/${module}/lib/libdmosi.a
+
 # === Documentation ===
 # README file
 readme=./README.md => ${destination}/${module}/README.md

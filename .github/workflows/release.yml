@@ -5,11 +5,48 @@ on:
     types: [created]
 
 jobs:
+  discover-architectures:
+    name: Discover Architectures
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    container:
+      image: chocotechnologies/dmod:1.0.4
+    outputs:
+      architectures: ${{ steps.list-archs.outputs.architectures }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch dmod to discover architectures
+        run: |
+          mkdir -p build_discovery
+          cd build_discovery
+          cmake ..
+
+      - name: List available architectures
+        id: list-archs
+        run: |
+          DMOD_SRC_DIR=$(find build_discovery -path "*/_deps/dmod-src" -type d | head -1)
+
+          # create JSON array
+          ARCHS=$(find ${DMOD_SRC_DIR}/configs/arch -name "tools-cfg.cmake" | \
+            sed "s|${DMOD_SRC_DIR}/configs/arch/||g" | \
+            sed 's|/tools-cfg.cmake||g' | \
+            jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          echo "Found architectures: $ARCHS"
+          echo "architectures=$ARCHS" >> $GITHUB_OUTPUT
+
   build-release:
-    name: Build Release Package
+    name: Build Release Package for ${{ matrix.arch_name }}
+    needs: discover-architectures
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    strategy:
+      matrix:
+        arch_name: ${{ fromJson(needs.discover-architectures.outputs.architectures) }}
 
     container:
       image: chocotechnologies/dmod:1.0.4
@@ -27,6 +64,25 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
+      - name: Build dmosi for ${{ matrix.arch_name }}
+        run: |
+          set -e
+          ARCH_DIR_NAME=$(echo "${{ matrix.arch_name }}" | sed 's|/|-|g')
+          echo "ARCH_DIR_NAME=$ARCH_DIR_NAME" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=release-$ARCH_DIR_NAME" >> $GITHUB_ENV
+
+          cmake -B "build_$ARCH_DIR_NAME" -DDMOD_TOOLS_NAME=arch/${{ matrix.arch_name }}
+          # Build only the dmosi target itself, not the default "all" target -
+          # the latter would also build dmod's own sibling dmod_system component
+          # (unconditionally added whenever DMOD_MODE=DMOD_SYSTEM), which dmosi
+          # does not depend on and which does not compile on every dmod-supported
+          # toolchain (e.g. xtensa/esp32s3's newlib is missing <sys/termios.h>).
+          cmake --build "build_$ARCH_DIR_NAME" --target dmosi -j"$(nproc)"
+
+          test -f "build_$ARCH_DIR_NAME/libdmosi.a"
+          echo "✓ libdmosi.a created successfully for ${{ matrix.arch_name }}"
+          ls -la "build_$ARCH_DIR_NAME/libdmosi.a"
+
       - name: Prepare release package
         run: |
           set -e
@@ -39,6 +95,10 @@ jobs:
           mkdir -p release_package/include
           cp include/dmosi.h release_package/include/
 
+          # Copy the precompiled static library
+          mkdir -p release_package/lib
+          cp "build_${ARCH_DIR_NAME}/libdmosi.a" release_package/lib/
+
           # Copy documentation and license
           cp README.md release_package/
           cp LICENSE release_package/
@@ -47,23 +107,26 @@ jobs:
           echo "${{ github.event.release.body }}" > release_package/RELEASE_NOTES.txt
 
           echo "Package contents:"
-          ls -la release_package/
-          ls -la release_package/include/
+          find release_package -type f
 
       - name: Create release archive
         run: |
-          cd release_package
-          # dmosi is architecture-independent (headers only), so no arch suffix needed
-          zip -r ../dmosi-${{ github.event.release.tag_name }}.zip .
-          cd ..
+          set -e
+          PACKAGE_NAME="dmosi-${{ github.event.release.tag_name }}-${ARCH_DIR_NAME}"
+          # zip the package directory's *contents*, not the directory itself -
+          # dmf-get expects dmosi.dmr directly at the zip root, so wrapping
+          # everything under a "${PACKAGE_NAME}/" prefix breaks dmf-get's
+          # headers/lib extraction (see dmlist/dmosi-posix releases, which hit
+          # exactly this bug).
+          (cd release_package && zip -r "../${PACKAGE_NAME}.zip" .)
           echo "Created archive:"
           ls -lh dmosi-*.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-package
-          path: dmosi-${{ github.event.release.tag_name }}.zip
+          name: ${{ env.ARTIFACT_NAME }}
+          path: dmosi-${{ github.event.release.tag_name }}-*.zip
           retention-days: 1
 
   generate-versions-manifest:
@@ -139,7 +202,7 @@ jobs:
           set -e
           # Upload all release archives to the GitHub release
           shopt -s nullglob
-          zip_files=(artifacts/release-package/*.zip)
+          zip_files=(artifacts/release-*/*.zip)
 
           if [ ${#zip_files[@]} -eq 0 ]; then
             echo "Error: No artifacts found to upload"
@@ -201,7 +264,7 @@ jobs:
         run: |
           set -e
           shopt -s nullglob
-          zip_files=(artifacts/release-package/*.zip)
+          zip_files=(artifacts/release-*/*.zip)
 
           for zip_file in "${zip_files[@]}"; do
             echo "Uploading $zip_file to vlatest..."

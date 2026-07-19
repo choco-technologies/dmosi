@@ -2,5 +2,6 @@
 $include https://github.com/choco-technologies/dmosi/releases/download/vlatest/versions.dmm
 
 # Module entries with version placeholder - will be expanded by $version-available
-# dmosi is architecture-independent (headers only)
-dmosi https://github.com/choco-technologies/dmosi/releases/download/v<version>/dmosi-v<version>.zip
+# dmosi now ships a precompiled static library alongside its headers, so it is
+# architecture-dependent like any other system module (see dmlist, dmheap)
+dmosi https://github.com/choco-technologies/dmosi/releases/download/v<version>/dmosi-v<version>-<arch_name>.zip
