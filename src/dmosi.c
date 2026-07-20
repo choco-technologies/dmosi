@@ -172,6 +172,21 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_get_info, (dmosi_threa
     return -ENOSYS;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_thread_exit_callback_handle_t, _thread_register_exit_callback,   (dmosi_thread_t thread, dmosi_thread_exit_callback_t callback, void* arg) )
+{
+    (void)thread;
+    (void)callback;
+    (void)arg;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_unregister_exit_callback, (dmosi_thread_t thread, dmosi_thread_exit_callback_handle_t handle) )
+{
+    (void)thread;
+    (void)handle;
+    return -ENOSYS;
+}
+
 //==============================================================================
 //                              Process API
 //==============================================================================

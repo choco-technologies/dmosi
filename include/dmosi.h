@@ -682,6 +682,47 @@ DMOD_BUILTIN_API( dmosi, 1.0, size_t, _thread_get_by_process, (dmosi_process_t p
  */
 DMOD_BUILTIN_API( dmosi, 1.0, int, _thread_get_info, (dmosi_thread_t thread, dmosi_thread_info_t* info) );
 
+/**
+ * @brief Thread exit callback function type
+ *
+ * Invoked when the thread it was registered on terminates.
+ *
+ * @param thread Thread handle that terminated
+ * @param arg User-provided argument passed at registration time
+ */
+typedef void (*dmosi_thread_exit_callback_t)(dmosi_thread_t thread, void* arg);
+
+/**
+ * @brief Opaque handle for a registered thread exit callback
+ *
+ * Returned by dmosi_thread_register_exit_callback and used to identify the
+ * registration when calling dmosi_thread_unregister_exit_callback.
+ */
+typedef struct dmosi_thread_exit_callback* dmosi_thread_exit_callback_handle_t;
+
+/**
+ * @brief Register a callback to be invoked when a thread terminates
+ *
+ * Multiple callbacks may be registered on the same thread; each registration
+ * returns its own handle and all of them are invoked when the thread
+ * terminates.
+ *
+ * @param thread Thread handle to observe
+ * @param callback Callback function to invoke on thread exit
+ * @param arg User-provided argument passed to the callback
+ * @return dmosi_thread_exit_callback_handle_t Handle identifying this registration, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_thread_exit_callback_handle_t, _thread_register_exit_callback,   (dmosi_thread_t thread, dmosi_thread_exit_callback_t callback, void* arg) );
+
+/**
+ * @brief Unregister a previously registered thread exit callback
+ *
+ * @param thread Thread handle the callback was registered on
+ * @param handle Handle returned by dmosi_thread_register_exit_callback
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _thread_unregister_exit_callback, (dmosi_thread_t thread, dmosi_thread_exit_callback_handle_t handle) );
+
 /** @} */ // end of DMOSI_THREAD_API
 
 //==============================================================================
