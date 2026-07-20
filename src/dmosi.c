@@ -357,6 +357,21 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_t, _process_get_paren
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, dmosi_process_exit_callback_handle_t, _process_register_exit_callback,   (dmosi_process_t process, dmosi_process_exit_callback_t callback, void* arg) )
+{
+    (void)process;
+    (void)callback;
+    (void)arg;
+    return NULL;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_unregister_exit_callback, (dmosi_process_t process, dmosi_process_exit_callback_handle_t handle) )
+{
+    (void)process;
+    (void)handle;
+    return -ENOSYS;
+}
+
 //==============================================================================
 //                              Queue API
 //==============================================================================

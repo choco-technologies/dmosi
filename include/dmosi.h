@@ -447,6 +447,48 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_exit_status, (dmosi_p
  */
 DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_t, _process_get_parent, (dmosi_process_t process) );
 
+/**
+ * @brief Process exit callback function type
+ *
+ * Invoked when the process it was registered on terminates.
+ *
+ * @param process Process handle that terminated
+ * @param exit_status Exit status of the terminated process (see dmosi_process_get_exit_status)
+ * @param arg User-provided argument passed at registration time
+ */
+typedef void (*dmosi_process_exit_callback_t)(dmosi_process_t process, int exit_status, void* arg);
+
+/**
+ * @brief Opaque handle for a registered process exit callback
+ *
+ * Returned by dmosi_process_register_exit_callback and used to identify the
+ * registration when calling dmosi_process_unregister_exit_callback.
+ */
+typedef struct dmosi_process_exit_callback* dmosi_process_exit_callback_handle_t;
+
+/**
+ * @brief Register a callback to be invoked when a process terminates
+ *
+ * Multiple callbacks may be registered on the same process; each registration
+ * returns its own handle and all of them are invoked when the process
+ * terminates.
+ *
+ * @param process Process handle to observe
+ * @param callback Callback function to invoke on process exit
+ * @param arg User-provided argument passed to the callback
+ * @return dmosi_process_exit_callback_handle_t Handle identifying this registration, NULL on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, dmosi_process_exit_callback_handle_t, _process_register_exit_callback,   (dmosi_process_t process, dmosi_process_exit_callback_t callback, void* arg) );
+
+/**
+ * @brief Unregister a previously registered process exit callback
+ *
+ * @param process Process handle the callback was registered on
+ * @param handle Handle returned by dmosi_process_register_exit_callback
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_unregister_exit_callback, (dmosi_process_t process, dmosi_process_exit_callback_handle_t handle) );
+
 /** @} */ // end of DMOSI_PROCESS_API
 
 //==============================================================================
