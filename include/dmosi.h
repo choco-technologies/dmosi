@@ -187,7 +187,12 @@ DMOD_BUILTIN_API( dmosi, 1.0, void,           _process_destroy,   (dmosi_process
 /**
  * @brief Kill a process
  *
- * Forcefully terminate a process and all its threads.
+ * Forcefully terminate a process and all its threads, and recursively every process
+ * spawned from it (i.e. every process whose dmosi_process_get_parent() chain leads back
+ * to @p process) - mirroring how a real OS tears down a whole process tree/cgroup rather
+ * than a single PID. A process spawned via dmosi_process_create() with parent == NULL
+ * (a detached process, e.g. Dmod_RunDetached()) is never implicitly reached this way -
+ * only processes actually parented under @p process are.
  *
  * @param process Process handle to kill
  * @param status Exit status code
@@ -291,6 +296,31 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_context, (dmosi_proce
  * @return Dmod_Context_t* Linked context, or NULL if none was ever set
  */
 DMOD_BUILTIN_API( dmosi, 1.0, Dmod_Context_t*, _process_get_context, (dmosi_process_t process) );
+
+/**
+ * @brief Set the foreground module context for a process
+ *
+ * Unlike dmosi_process_set_context (which is set once at spawn time and identifies the
+ * context the process itself runs), the foreground module tracks whichever context's Main
+ * entry point is currently executing within the process - see Dmod_Main(). A module that
+ * calls another module synchronously, in its own process rather than a spawned one, saves
+ * the previous foreground context with dmosi_process_get_foreground_module before overwriting
+ * it, and restores it once the call returns, so nested/synchronous calls behave correctly.
+ *
+ * @param process Process handle
+ * @param context Context to mark as the foreground module, or NULL to clear it
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_foreground_module, (dmosi_process_t process, Dmod_Context_t* context) );
+
+/**
+ * @brief Get the foreground module context currently set for a process
+ *
+ * @param process Process handle
+ * @return Dmod_Context_t* Context most recently set as foreground for this process via
+ *         dmosi_process_set_foreground_module, or NULL if none is set
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, Dmod_Context_t*, _process_get_foreground_module, (dmosi_process_t process) );
 
 /**
  * @brief Set process user ID

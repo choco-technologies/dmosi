@@ -279,6 +279,19 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, Dmod_Context_t*, _process_get_conte
     return NULL;
 }
 
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_foreground_module, (dmosi_process_t process, Dmod_Context_t* context) )
+{
+    (void)process;
+    (void)context;
+    return -ENOSYS;
+}
+
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, Dmod_Context_t*, _process_get_foreground_module, (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_uid,   (dmosi_process_t process, dmosi_user_id_t uid) )
 {
     (void)process;
@@ -903,6 +916,33 @@ Dmod_Pid_t Dmod_GetCurrentPid(void)
         return (Dmod_Pid_t)-ENOSYS;
     }
     return (Dmod_Pid_t)dmosi_process_get_id(current_process);
+}
+
+/**
+ * @brief DMOD SetForegroundModule/GetForegroundModule implementation using DMOSI
+ *
+ * Resolves Pid to its dmosi_process_t and stores/retrieves the foreground context directly
+ * on that process (see dmosi_process_set_foreground_module/dmosi_process_get_foreground_module),
+ * rather than in a separate lookup table as the DMOD weak fallback does.
+ */
+int Dmod_SetForegroundModule(Dmod_Pid_t Pid, Dmod_Context_t* Context)
+{
+    dmosi_process_t process = dmosi_process_find_by_id((dmosi_process_id_t)Pid);
+    if (process == NULL) {
+        return -ESRCH;
+    }
+
+    return dmosi_process_set_foreground_module(process, Context);
+}
+
+Dmod_Context_t* Dmod_GetForegroundModule(Dmod_Pid_t Pid)
+{
+    dmosi_process_t process = dmosi_process_find_by_id((dmosi_process_id_t)Pid);
+    if (process == NULL) {
+        return NULL;
+    }
+
+    return dmosi_process_get_foreground_module(process);
 }
 
 void* Dmod_ResolveStreamFile(Dmod_Pid_t Pid, void* StdHandle)
