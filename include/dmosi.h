@@ -1079,4 +1079,36 @@ DMOD_BUILTIN_API( dmosi, 1.0, uint32_t, _get_tick_count, (void) );
 
 /** @} */ // end of DMOSI_SYSTIME_API
 
+//==============================================================================
+//                              Random Number API
+//==============================================================================
+/**
+ * @defgroup DMOSI_RAND_API Random Number API
+ * @brief Non-cryptographic pseudo-random numbers for jitter/ID generation
+ *
+ * NOT a CSPRNG. Suitable for DHCP transaction IDs, retransmission jitter,
+ * TCP initial sequence numbers, and similar uses where an attacker
+ * predicting the output is a nuisance, not a security failure. Never use
+ * this for session tokens, keys, nonces, or any other security-sensitive
+ * value - embedded targets running dmosi-freertos may have no real
+ * hardware entropy source at all.
+ * @{
+ */
+
+/**
+ * @brief Get a pseudo-random 32-bit value
+ * @return A pseudo-random value. Not cryptographically secure - see this
+ *         group's own doc comment.
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, uint32_t, _rand32, (void) );
+
+/**
+ * @brief Fill a buffer with pseudo-random bytes
+ * @param buffer Output buffer, at least `len` bytes
+ * @param len    Number of bytes to write
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, void, _rand_bytes, (uint8_t* buffer, size_t len) );
+
+/** @} */ // end of DMOSI_RAND_API
+
 #endif // DMOSI_H

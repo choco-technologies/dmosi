@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <string.h>
 #include "dmod.h"
 #include "dmosi.h"
 
@@ -1196,6 +1197,33 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _get_min_interrupt_priori
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _get_tick_count, (void) )
 {
     return 0;
+}
+
+//==============================================================================
+//                              Random Number API
+//==============================================================================
+/**
+ * @brief Default (weak) implementation of dmosi_rand32
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @return uint32_t Always 0
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _rand32, (void) )
+{
+    return 0;
+}
+
+/**
+ * @brief Default (weak) implementation of dmosi_rand_bytes
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _rand_bytes, (uint8_t* buffer, size_t len) )
+{
+    if (buffer != NULL) memset(buffer, 0, len);
 }
 
 //==============================================================================
