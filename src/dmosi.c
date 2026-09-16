@@ -1897,7 +1897,16 @@ void* Dmod_LockStdio(void* StdHandle)
         // specifically to skip dmosi_process_current() below - process/thread state may
         // already be corrupted in that context, and resolving it can fault a second time.
         // Returning NULL here routes the caller straight to its Dmod_WriteKernel fallback.
-        if (Dmod_IsForceKernelWrite()) {
+        //
+        // An ISR takes the same route, for a different reason: everything below this
+        // point is illegal from interrupt context. dmosi_process_current() resolves the
+        // *current thread*, which has no meaning in an ISR, and dmosi_process_lock_stream()
+        // plus the dmvfs write that follows take RTOS locks - under FreeRTOS that lands in
+        // vPortEnterCritical(), whose configASSERT(VECTACTIVE == 0) halts the system on the
+        // spot. Routing to Dmod_WriteKernel() instead keeps Dmod_Printf/DMOD_LOG_* usable
+        // from a driver ISR; the text goes to the raw kernel log ring (dmlog) rather than
+        // the process's stdout, which is the only place that can safely receive it here.
+        if (Dmod_IsForceKernelWrite() || Dmod_IsInsideInterrupt()) {
             return NULL;
         }
 
