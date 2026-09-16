@@ -1621,8 +1621,19 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     }
     stack_size += DMOSI_THREAD_STACK_OVERHEAD;
 
-    // Inherit priority from current thread
-    int priority = dmosi_thread_get_priority(NULL);
+    // A child process (parent != NULL, e.g. a command dmell runs in the
+    // foreground) inherits the priority of whoever spawned it - it's meant
+    // to run as an extension of that session. A detached/independent
+    // process (parent == NULL, e.g. a systemd service) has no session to
+    // inherit from and must use its own DMOD_PRIORITY instead, or every
+    // detached module would silently run at its spawner's priority rather
+    // than the one it was built with.
+    int priority;
+    if (parent != NULL) {
+        priority = dmosi_thread_get_priority(NULL);
+    } else {
+        priority = (int)Dmod_GetPriority(Context);
+    }
     if (priority == 0) {
         priority = DMOSI_DEFAULT_PRIORITY;
     }
