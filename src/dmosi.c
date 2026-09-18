@@ -1342,6 +1342,20 @@ void Dmod_Semaphore_Delete(void* Semaphore)
     dmosi_semaphore_destroy((dmosi_semaphore_t)Semaphore);
 }
 
+/**
+ * @brief DMOD ThreadSleep implementation using DMOSI
+ *
+ * Overrides the weak busy-wait default in dmod so that a polling loop actually
+ * leaves the scheduler's ready list while it waits, instead of holding the CPU
+ * against every lower-priority thread (see Dmod_ThreadSleep in dmod_sal.h).
+ *
+ * @param Milliseconds Minimum time to sleep, in milliseconds; 0 yields.
+ */
+void Dmod_ThreadSleep(uint32_t Milliseconds)
+{
+    dmosi_thread_sleep(Milliseconds);
+}
+
 #endif // !DMOSI_DONT_IMPLEMENT_DMOD_API
 
 //==============================================================================
