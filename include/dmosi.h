@@ -371,11 +371,29 @@ DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmosi_process
 DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_command, (dmosi_process_t process, const char* command) );
 
 /**
+ * @brief Set the command a process was started with, from an argv array
+ *
+ * Equivalent to joining @p argv into a single space-separated command-line string and
+ * passing it to dmosi_process_set_command(), but lets the backend build and store the
+ * command directly in a single allocation, tagged to the process's own module from the
+ * start, instead of needing a separate intermediate string built (and then freed) by the
+ * caller. This is what the module-start API (Dmod_Spawn/Dmod_RunDetached) uses to fill
+ * dmosi_process_get_command() in automatically.
+ *
+ * @param process Process handle
+ * @param argc Number of arguments in argv (must be > 0)
+ * @param argv Argument array, argv[0] being the command name as invoked
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_command_args, (dmosi_process_t process, int argc, char* argv[]) );
+
+/**
  * @brief Get the command a process was started with
  *
  * @param process Process handle
  * @return const char* Command line the process was started with (as recorded via
- *         dmosi_process_set_command), or NULL if none was ever set
+ *         dmosi_process_set_command/dmosi_process_set_command_args), or NULL if none
+ *         was ever set
  */
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_command, (dmosi_process_t process) );
 

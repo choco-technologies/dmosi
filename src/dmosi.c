@@ -769,6 +769,25 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_command, (dmosi_p
 }
 
 /**
+ * @brief Default (weak) implementation of dmosi_process_set_command_args
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @param process Process handle (unused)
+ * @param argc Number of arguments in argv (unused)
+ * @param argv Argument array (unused)
+ * @return int Always -ENOSYS
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_command_args, (dmosi_process_t process, int argc, char* argv[]) )
+{
+    (void)process;
+    (void)argc;
+    (void)argv;
+    return -ENOSYS;
+}
+
+/**
  * @brief Default (weak) implementation of dmosi_process_get_command
  *
  * Overridden by the platform-specific dmosi backend. This default is used
@@ -1596,57 +1615,6 @@ static int dmod_apply_stream_redirections(dmosi_process_t process, const char* m
 }
 
 /**
- * @brief Build the command-line string to record for a freshly spawned process
- *
- * Prefers joining @p argv (space-separated) since that reflects exactly what was
- * invoked, including any arguments - falling back to @p module_name alone when no
- * argv was provided (e.g. Dmod_Spawn() called programmatically with argc == 0).
- * Allocates exactly as much space as the command line actually needs - no fixed
- * cap, so an arbitrarily long command line is never truncated.
- *
- * @param module_name Module name to fall back to if argv is unavailable
- * @param argc Number of arguments in argv
- * @param argv Argument array, argv[0] being the command name as invoked
- * @return char* Newly heap-allocated command-line string (caller must Dmod_Free it),
- *         or NULL on allocation failure
- */
-static char* dmod_build_command_string(const char* module_name, int argc, char* argv[])
-{
-    if (argc <= 0 || argv == NULL || argv[0] == NULL) {
-        return Dmod_StrDup(module_name);
-    }
-
-    // First pass: compute the exact length needed, so the allocation below can fit
-    // the whole command line however long it is.
-    size_t total_length = 0;
-    for (int i = 0; i < argc && argv[i] != NULL; i++) {
-        if (i > 0) {
-            total_length += 1; // separating space
-        }
-        total_length += strlen(argv[i]);
-    }
-
-    char* command = Dmod_MallocEx(total_length + 1, module_name);
-    if (command == NULL) {
-        return NULL;
-    }
-
-    // Second pass: copy each argument into place
-    size_t used = 0;
-    for (int i = 0; i < argc && argv[i] != NULL; i++) {
-        if (i > 0) {
-            command[used++] = ' ';
-        }
-        size_t len = strlen(argv[i]);
-        memcpy(command + used, argv[i], len);
-        used += len;
-    }
-    command[used] = '\0';
-
-    return command;
-}
-
-/**
  * @brief Helper function to spawn a module in a new process/thread
  *
  * This internal function handles the common logic for both Spawn and RunDetached.
@@ -1688,12 +1656,14 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
 
     // Record the command (with arguments) this process was started with, so it can
     // later be inspected - e.g. displayed in a process listing (see dmell's ps command).
-    // Built with no fixed length cap (see dmod_build_command_string) - freed again right
-    // away since dmosi_process_set_command() keeps its own copy.
-    char* command = dmod_build_command_string(module_name, argc, argv);
-    if (command != NULL) {
-        dmosi_process_set_command(new_process, command);
-        Dmod_Free(command);
+    // Prefer the args-based setter, which lets the backend build and store the joined
+    // command line in a single allocation instead of needing an intermediate string
+    // built (and freed) here - fall back to the module name alone when no argv was
+    // given (e.g. Dmod_Spawn() called programmatically with argc == 0).
+    if (argc > 0 && argv != NULL && argv[0] != NULL) {
+        dmosi_process_set_command_args(new_process, argc, argv);
+    } else {
+        dmosi_process_set_command(new_process, module_name);
     }
 
     // Apply requested stream redirections before starting the module thread
