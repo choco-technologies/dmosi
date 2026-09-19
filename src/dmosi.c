@@ -752,6 +752,57 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (d
 }
 
 /**
+ * @brief Default (weak) implementation of dmosi_process_set_command
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @param process Process handle (unused)
+ * @param command Command line string to associate with the process (unused)
+ * @return int Always -ENOSYS
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_command, (dmosi_process_t process, const char* command) )
+{
+    (void)process;
+    (void)command;
+    return -ENOSYS;
+}
+
+/**
+ * @brief Default (weak) implementation of dmosi_process_set_command_args
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @param process Process handle (unused)
+ * @param argc Number of arguments in argv (unused)
+ * @param argv Argument array (unused)
+ * @return int Always -ENOSYS
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_command_args, (dmosi_process_t process, int argc, char* argv[]) )
+{
+    (void)process;
+    (void)argc;
+    (void)argv;
+    return -ENOSYS;
+}
+
+/**
+ * @brief Default (weak) implementation of dmosi_process_get_command
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @param process Process handle (unused)
+ * @return const char* Always NULL
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_command, (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+/**
  * @brief Default (weak) implementation of dmosi_process_set_stream
  *
  * Overridden by the platform-specific dmosi backend. This default is used
@@ -1602,6 +1653,18 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     // this lets Dmod_GetCurrentContext() (and through it, Dmod_GetCurrentAllocatorNameEx())
     // resolve correctly from the very first Dmod_Malloc call the module's own code makes.
     dmosi_process_set_context(new_process, Context);
+
+    // Record the command (with arguments) this process was started with, so it can
+    // later be inspected - e.g. displayed in a process listing (see dmell's ps command).
+    // Prefer the args-based setter, which lets the backend build and store the joined
+    // command line in a single allocation instead of needing an intermediate string
+    // built (and freed) here - fall back to the module name alone when no argv was
+    // given (e.g. Dmod_Spawn() called programmatically with argc == 0).
+    if (argc > 0 && argv != NULL && argv[0] != NULL) {
+        dmosi_process_set_command_args(new_process, argc, argv);
+    } else {
+        dmosi_process_set_command(new_process, module_name);
+    }
 
     // Apply requested stream redirections before starting the module thread
     int stream_result = dmod_apply_stream_redirections(new_process, module_name, Streams);
