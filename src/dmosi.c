@@ -7,12 +7,6 @@
 #define DMOSI_DEFAULT_STACK_SIZE 1024
 #define DMOSI_DEFAULT_PRIORITY 0
 
-// Maximum length of the command line string recorded at spawn time (see
-// dmod_build_command_string/dmosi_process_set_command). Long command lines are
-// truncated to this length, matching the truncation dmell's own ps command
-// already applies when displaying process info.
-#define DMOSI_COMMAND_MAX_LENGTH 256
-
 /**
  * @brief Default (weak) implementation of dmosi_init
  *
@@ -1607,34 +1601,49 @@ static int dmod_apply_stream_redirections(dmosi_process_t process, const char* m
  * Prefers joining @p argv (space-separated) since that reflects exactly what was
  * invoked, including any arguments - falling back to @p module_name alone when no
  * argv was provided (e.g. Dmod_Spawn() called programmatically with argc == 0).
- * The result is truncated to @p buf_size if the full command line does not fit.
+ * Allocates exactly as much space as the command line actually needs - no fixed
+ * cap, so an arbitrarily long command line is never truncated.
  *
  * @param module_name Module name to fall back to if argv is unavailable
  * @param argc Number of arguments in argv
  * @param argv Argument array, argv[0] being the command name as invoked
- * @param buf Output buffer
- * @param buf_size Size of @p buf
+ * @return char* Newly heap-allocated command-line string (caller must Dmod_Free it),
+ *         or NULL on allocation failure
  */
-static void dmod_build_command_string(const char* module_name, int argc, char* argv[], char* buf, size_t buf_size)
+static char* dmod_build_command_string(const char* module_name, int argc, char* argv[])
 {
-    if (buf_size == 0) {
-        return;
-    }
-
     if (argc <= 0 || argv == NULL || argv[0] == NULL) {
-        Dmod_SnPrintf(buf, buf_size, "%s", module_name);
-        return;
+        return Dmod_StrDup(module_name);
     }
 
-    size_t used = 0;
-    buf[0] = '\0';
+    // First pass: compute the exact length needed, so the allocation below can fit
+    // the whole command line however long it is.
+    size_t total_length = 0;
     for (int i = 0; i < argc && argv[i] != NULL; i++) {
-        int written = Dmod_SnPrintf(buf + used, buf_size - used, "%s%s", (i > 0) ? " " : "", argv[i]);
-        if (written < 0 || (size_t)written >= buf_size - used) {
-            break;
+        if (i > 0) {
+            total_length += 1; // separating space
         }
-        used += (size_t)written;
+        total_length += strlen(argv[i]);
     }
+
+    char* command = Dmod_MallocEx(total_length + 1, module_name);
+    if (command == NULL) {
+        return NULL;
+    }
+
+    // Second pass: copy each argument into place
+    size_t used = 0;
+    for (int i = 0; i < argc && argv[i] != NULL; i++) {
+        if (i > 0) {
+            command[used++] = ' ';
+        }
+        size_t len = strlen(argv[i]);
+        memcpy(command + used, argv[i], len);
+        used += len;
+    }
+    command[used] = '\0';
+
+    return command;
 }
 
 /**
@@ -1679,9 +1688,13 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
 
     // Record the command (with arguments) this process was started with, so it can
     // later be inspected - e.g. displayed in a process listing (see dmell's ps command).
-    char command_buf[DMOSI_COMMAND_MAX_LENGTH];
-    dmod_build_command_string(module_name, argc, argv, command_buf, sizeof(command_buf));
-    dmosi_process_set_command(new_process, command_buf);
+    // Built with no fixed length cap (see dmod_build_command_string) - freed again right
+    // away since dmosi_process_set_command() keeps its own copy.
+    char* command = dmod_build_command_string(module_name, argc, argv);
+    if (command != NULL) {
+        dmosi_process_set_command(new_process, command);
+        Dmod_Free(command);
+    }
 
     // Apply requested stream redirections before starting the module thread
     int stream_result = dmod_apply_stream_redirections(new_process, module_name, Streams);
