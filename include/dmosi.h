@@ -357,6 +357,29 @@ DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_pwd,   (dmosi_process
 DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_pwd,   (dmosi_process_t process) );
 
 /**
+ * @brief Set the command a process was started with
+ *
+ * Records the command line (program name plus arguments) that was used to start
+ * @p process, so it can later be retrieved with dmosi_process_get_command - e.g.
+ * for display in a process listing (see dmell's ps command). Filled in automatically
+ * by the module-start API (Dmod_Spawn/Dmod_RunDetached) from the argv it was given.
+ *
+ * @param process Process handle
+ * @param command Command line string to associate with the process
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,            _process_set_command, (dmosi_process_t process, const char* command) );
+
+/**
+ * @brief Get the command a process was started with
+ *
+ * @param process Process handle
+ * @return const char* Command line the process was started with (as recorded via
+ *         dmosi_process_set_command), or NULL if none was ever set
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, const char*,    _process_get_command, (dmosi_process_t process) );
+
+/**
  * @brief Well-known stream slot indices for a process
  *
  * These indices identify the standard stream slots that every process has.

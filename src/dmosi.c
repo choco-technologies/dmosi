@@ -7,6 +7,12 @@
 #define DMOSI_DEFAULT_STACK_SIZE 1024
 #define DMOSI_DEFAULT_PRIORITY 0
 
+// Maximum length of the command line string recorded at spawn time (see
+// dmod_build_command_string/dmosi_process_set_command). Long command lines are
+// truncated to this length, matching the truncation dmell's own ps command
+// already applies when displaying process info.
+#define DMOSI_COMMAND_MAX_LENGTH 256
+
 /**
  * @brief Default (weak) implementation of dmosi_init
  *
@@ -746,6 +752,38 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_pwd,   (dmosi_pro
  * @return const char* Always NULL
  */
 DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_pwd,   (dmosi_process_t process) )
+{
+    (void)process;
+    return NULL;
+}
+
+/**
+ * @brief Default (weak) implementation of dmosi_process_set_command
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @param process Process handle (unused)
+ * @param command Command line string to associate with the process (unused)
+ * @return int Always -ENOSYS
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_set_command, (dmosi_process_t process, const char* command) )
+{
+    (void)process;
+    (void)command;
+    return -ENOSYS;
+}
+
+/**
+ * @brief Default (weak) implementation of dmosi_process_get_command
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @param process Process handle (unused)
+ * @return const char* Always NULL
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, const char*, _process_get_command, (dmosi_process_t process) )
 {
     (void)process;
     return NULL;
@@ -1564,6 +1602,42 @@ static int dmod_apply_stream_redirections(dmosi_process_t process, const char* m
 }
 
 /**
+ * @brief Build the command-line string to record for a freshly spawned process
+ *
+ * Prefers joining @p argv (space-separated) since that reflects exactly what was
+ * invoked, including any arguments - falling back to @p module_name alone when no
+ * argv was provided (e.g. Dmod_Spawn() called programmatically with argc == 0).
+ * The result is truncated to @p buf_size if the full command line does not fit.
+ *
+ * @param module_name Module name to fall back to if argv is unavailable
+ * @param argc Number of arguments in argv
+ * @param argv Argument array, argv[0] being the command name as invoked
+ * @param buf Output buffer
+ * @param buf_size Size of @p buf
+ */
+static void dmod_build_command_string(const char* module_name, int argc, char* argv[], char* buf, size_t buf_size)
+{
+    if (buf_size == 0) {
+        return;
+    }
+
+    if (argc <= 0 || argv == NULL || argv[0] == NULL) {
+        Dmod_SnPrintf(buf, buf_size, "%s", module_name);
+        return;
+    }
+
+    size_t used = 0;
+    buf[0] = '\0';
+    for (int i = 0; i < argc && argv[i] != NULL; i++) {
+        int written = Dmod_SnPrintf(buf + used, buf_size - used, "%s%s", (i > 0) ? " " : "", argv[i]);
+        if (written < 0 || (size_t)written >= buf_size - used) {
+            break;
+        }
+        used += (size_t)written;
+    }
+}
+
+/**
  * @brief Helper function to spawn a module in a new process/thread
  *
  * This internal function handles the common logic for both Spawn and RunDetached.
@@ -1602,6 +1676,12 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     // this lets Dmod_GetCurrentContext() (and through it, Dmod_GetCurrentAllocatorNameEx())
     // resolve correctly from the very first Dmod_Malloc call the module's own code makes.
     dmosi_process_set_context(new_process, Context);
+
+    // Record the command (with arguments) this process was started with, so it can
+    // later be inspected - e.g. displayed in a process listing (see dmell's ps command).
+    char command_buf[DMOSI_COMMAND_MAX_LENGTH];
+    dmod_build_command_string(module_name, argc, argv, command_buf, sizeof(command_buf));
+    dmosi_process_set_command(new_process, command_buf);
 
     // Apply requested stream redirections before starting the module thread
     int stream_result = dmod_apply_stream_redirections(new_process, module_name, Streams);
