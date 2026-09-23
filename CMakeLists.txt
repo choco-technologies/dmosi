@@ -3,14 +3,6 @@
 # =====================================================================
 cmake_minimum_required(VERSION 3.10)
 
-# ======================================================================
-#               DMOD OSI
-# ======================================================================
-project(dmosi
-    VERSION 2.0
-    DESCRIPTION "DMOD Operating System Interface"
-    LANGUAGES C CXX)
-
 set(DMOSI_DONT_IMPLEMENT_DMOD_API OFF CACHE BOOL "Do not implement DMOD API in dmosi library")
 set(DMOSI_DONT_IMPLEMENT_DMOD_API_MUTEX OFF CACHE BOOL "Do not implement DMOD Mutex API in dmosi library")
 set(DMOSI_DONT_IMPLEMENT_DMOD_API_ENV OFF CACHE BOOL "Do not implement DMOD Environment API in dmosi library")
@@ -52,6 +44,17 @@ else()
 endif()
 
 include(${DMOD_DIR}/paths.cmake)
+
+# ======================================================================
+#               DMOD OSI
+# ======================================================================
+# DMOD must configure the architecture-specific compilers before this project
+# enables C/CXX. Otherwise CMake locks in the host compiler and release
+# artifacts are mislabeled when DMOD_TOOLS_NAME selects another architecture.
+project(dmosi
+    VERSION 2.0
+    DESCRIPTION "DMOD Operating System Interface"
+    LANGUAGES C CXX)
 
 # ======================================================================
 #               DMOD OSI Interface Library
