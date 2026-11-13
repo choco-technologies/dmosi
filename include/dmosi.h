@@ -12,6 +12,7 @@
  * try to re-register every kernel API, causing "multiple definition" link
  * errors against dmod_system.c's own registrations.
  */
+#include <errno.h>
 #include "dmod_types.h"
 
 /**
@@ -1093,6 +1094,178 @@ DMOD_BUILTIN_API( dmosi, 1.0, void, _tick_handler,            (void) );
 DMOD_BUILTIN_API( dmosi, 1.0, uint32_t, _get_min_interrupt_priority, (void) );
 
 /** @} */ // end of DMOSI_IRQ_API
+
+//==============================================================================
+//                              Fault API
+//==============================================================================
+/**
+ * @defgroup DMOSI_FAULT_API Fault API
+ * @brief Containing a fault to the process that caused it
+ *
+ * A thread that runs out of stack or executes something the CPU refuses
+ * (an invalid memory access, an undefined instruction, ...) cannot continue.
+ * Without this API the only possible reaction is to halt the whole system;
+ * with it the damage is contained to the process the thread belongs to: the
+ * process is told about the fault on its standard output and terminated,
+ * and everything else keeps running.
+ *
+ * Three layers take part, each one doing only what it alone knows how to do:
+ *
+ * | Layer                         | Responsibility                                                     |
+ * |-------------------------------|--------------------------------------------------------------------|
+ * | Architecture (exception code) | Detects the fault, describes it (dmosi_fault_t), abandons the     |
+ * |                               | faulting code path as told by dmosi_thread_fault()                 |
+ * | Thread backend (RTOS port)    | dmosi_thread_fault(): decides whether the fault can be contained   |
+ * |                               | and where the thread continues; detects stack overflows itself     |
+ * | Process backend               | dmosi_process_fault(): reports the fault on the process's standard |
+ * |                               | output and terminates the process                                  |
+ *
+ * The flow for a fault raised by the CPU:
+ *
+ * @code
+ *   CPU exception (handler mode)
+ *     -> architecture handler fills dmosi_fault_t
+ *     -> dmosi_thread_fault(&fault, &recovery)          [interrupt context]
+ *          false: the fault cannot be contained -> system panic
+ *          true:  the architecture handler resumes the thread in
+ *                 recovery.entry(recovery.arg) on an empty stack (recovery.stack_top)
+ *     -> recovery.entry runs in the faulting thread     [thread context]
+ *     -> dmosi_process_fault(process, &fault)
+ *          reports on the process's stdout, kills the process
+ * @endcode
+ *
+ * A stack overflow detected by the thread backend itself (e.g. by the
+ * kernel's stack check at a context switch) does not pass through the
+ * architecture layer: the backend calls dmosi_process_fault() on its own,
+ * from a thread it controls.
+ * @{
+ */
+
+/**
+ * @brief Kind of fault that stopped a thread
+ */
+typedef enum {
+    DMOSI_FAULT_UNKNOWN,                /**< The cause could not be determined */
+    DMOSI_FAULT_STACK_OVERFLOW,         /**< The thread ran out of its stack */
+    DMOSI_FAULT_MEMORY_ACCESS,          /**< Access to memory that cannot be accessed that way (data or code) */
+    DMOSI_FAULT_ILLEGAL_INSTRUCTION,    /**< Undefined instruction or invalid execution state */
+    DMOSI_FAULT_ARITHMETIC              /**< Arithmetic error, e.g. integer division by zero */
+} dmosi_fault_type_t;
+
+/**
+ * @brief Description of a fault
+ *
+ * Filled in by whoever detects the fault. The @c thread field is owned by
+ * the thread backend: the architecture layer leaves it NULL and
+ * dmosi_thread_fault() sets it to the thread that was interrupted.
+ */
+typedef struct {
+    dmosi_fault_type_t type;    /**< Kind of fault */
+    dmosi_thread_t thread;      /**< Thread that faulted (set by the thread backend) */
+    uintptr_t pc;               /**< Address of the code that faulted, 0 if unknown */
+    uintptr_t sp;               /**< Stack pointer at the time of the fault, 0 if unknown */
+    uintptr_t address;          /**< Memory address whose access faulted, valid only if @c has_address */
+    bool has_address;           /**< Whether @c address is known */
+} dmosi_fault_t;
+
+/**
+ * @brief Where a faulting thread continues, as decided by dmosi_thread_fault()
+ *
+ * The faulting code path is abandoned for good: the thread must be resumed
+ * as if it had just been created with @c entry and @c arg, on an empty
+ * stack that starts at @c stack_top. @c entry never returns.
+ */
+typedef struct {
+    dmosi_thread_entry_t entry; /**< Function the thread must continue in */
+    void* arg;                  /**< Argument for @c entry */
+    void* stack_top;            /**< Initial stack pointer for @c entry (the stack is empty, aligned for the architecture) */
+} dmosi_fault_recovery_t;
+
+/**
+ * @brief Exit status of a process terminated because of a fault
+ */
+#define DMOSI_FAULT_EXIT_STATUS    (-EFAULT)
+
+/**
+ * @brief Report that the thread interrupted by the current exception has faulted
+ *
+ * Called by the architecture's exception handler, in interrupt context, with
+ * the description of the fault. The thread backend decides whether the fault
+ * can be contained to the process of the interrupted thread.
+ *
+ * It cannot when there is nothing to contain it to, or when terminating the
+ * thread would leave the system in a state nobody can vouch for: the
+ * scheduler is not running, the thread does not belong to a process or
+ * belongs to the system process, the scheduler was suspended by the thread,
+ * or the thread faulted again while its previous fault was being handled.
+ * The caller additionally must not ask at all - and has to treat the fault
+ * as fatal - when the exception did not interrupt a thread (it interrupted
+ * another interrupt handler) or interrupted it with interrupts masked.
+ *
+ * When this function returns true, the caller must not return to the
+ * faulting code. It resumes the thread as described by @p recovery instead.
+ *
+ * @param fault Description of the fault; @c thread is ignored
+ * @param recovery Filled in when the function returns true
+ * @return bool true if the fault is contained and @p recovery says how the
+ *         thread continues, false if the fault is fatal to the whole system
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, bool, _thread_fault, (const dmosi_fault_t* fault, dmosi_fault_recovery_t* recovery) );
+
+/**
+ * @brief Terminate a process because one of its threads has faulted
+ *
+ * Reports the fault on the standard output of @p process - the stream the
+ * process was working on, wherever it is bound to - and then kills the
+ * process the same way dmosi_process_kill() does, with
+ * DMOSI_FAULT_EXIT_STATUS as its exit status.
+ *
+ * Must be called from thread context. When called by a thread of @p process
+ * itself (the usual case: the faulting thread, resumed in the entry given by
+ * dmosi_thread_fault()), it does not return.
+ *
+ * @param process Process to terminate
+ * @param fault Description of the fault
+ * @return int 0 on success, negative error code on failure
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,  _process_fault, (dmosi_process_t process, const dmosi_fault_t* fault) );
+
+/**
+ * @brief Size, and alignment, of the stack guard (see dmosi_stack_guard_select())
+ *
+ * A power of two. It is also the largest frame a function can allocate in one step and still be
+ * caught: code that moves the stack pointer past the whole guard at once, and writes below it,
+ * overflows unnoticed.
+ */
+#define DMOSI_STACK_GUARD_SIZE    256
+
+/**
+ * @brief Protect the memory below the stack of the thread that is about to run
+ *
+ * Software checks find a stack overflow only after the code that caused it
+ * has already written over whatever lies below the stack. On a CPU with
+ * memory protection the overflow can instead be made to fault the moment it
+ * happens. The thread backend calls this every time it switches to a thread,
+ * from the context switch itself - it must be short, must not block and
+ * must not use the stack more than a few words - so the architecture can
+ * move its guard to the stack of that thread. A write to the guard is
+ * reported to dmosi_thread_fault() like any other fault, and as a
+ * DMOSI_FAULT_STACK_OVERFLOW.
+ *
+ * The guard (DMOSI_STACK_GUARD_SIZE bytes, aligned to its size) lives inside
+ * the stack buffer, so it takes up to twice its size of it - the thread
+ * backend adds that to the stacks it allocates. A stack too small to be
+ * worth it is left unguarded; the backend's own check is all that protects
+ * it then.
+ *
+ * Does nothing unless the architecture implements it.
+ *
+ * @param stack_base Lowest address of the stack of the thread (the stack grows down from its top)
+ * @param stack_size Size of the stack in bytes
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, void, _stack_guard_select, (const void* stack_base, size_t stack_size) );
+
+/** @} */ // end of DMOSI_FAULT_API
 
 //==============================================================================
 //                              System Time API
