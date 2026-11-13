@@ -1235,6 +1235,60 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, uint32_t, _get_min_interrupt_priori
 }
 
 //==============================================================================
+//                              Fault API - Default (weak) Implementations
+//==============================================================================
+
+/**
+ * @brief Default (weak) implementation of dmosi_thread_fault
+ *
+ * Overridden by the platform-specific dmosi backend. Without a backend
+ * there are no threads a fault could be contained to, so every fault is
+ * fatal to the system.
+ *
+ * @param fault Description of the fault (unused)
+ * @param recovery Where the thread would continue (unused)
+ * @return bool Always false
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _thread_fault, (const dmosi_fault_t* fault, dmosi_fault_recovery_t* recovery) )
+{
+    (void)fault;
+    (void)recovery;
+    return false;
+}
+
+/**
+ * @brief Default (weak) implementation of dmosi_stack_guard_select
+ *
+ * Overridden by an architecture that can protect memory. Without it a stack
+ * overflow is found by the thread backend's own check.
+ *
+ * @param stack_base Lowest address of the stack (unused)
+ * @param stack_size Size of the stack in bytes (unused)
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, void, _stack_guard_select, (const void* stack_base, size_t stack_size) )
+{
+    (void)stack_base;
+    (void)stack_size;
+}
+
+/**
+ * @brief Default (weak) implementation of dmosi_process_fault
+ *
+ * Overridden by the platform-specific dmosi backend. This default is used
+ * when no backend has been linked in.
+ *
+ * @param process Process to terminate (unused)
+ * @param fault Description of the fault (unused)
+ * @return int Always -ENOSYS
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _process_fault, (dmosi_process_t process, const dmosi_fault_t* fault) )
+{
+    (void)process;
+    (void)fault;
+    return -ENOSYS;
+}
+
+//==============================================================================
 //                              System Time API
 //==============================================================================
 /**
@@ -1515,7 +1569,6 @@ typedef struct {
     Dmod_Context_t* context;
     int argc;
     char** argv;
-    dmosi_process_t process;  // Process handle for this spawn
 } dmod_spawn_args_t;
 
 /**
@@ -1529,34 +1582,48 @@ static void dmod_spawn_thread_entry(void* arg)
 {
     dmod_spawn_args_t* spawn_args = arg;
     if (spawn_args != NULL && spawn_args->context != NULL) {
-        // Run the module and get result
-        int result = Dmod_Run(spawn_args->context, spawn_args->argc, spawn_args->argv);
-
-        // This thread owns unloading the context: the caller that spawned us (see
-        // Dmod_SpawnModule/Dmod_RunModuleDetached) deliberately does not unload it
-        // itself, since Dmod_Unload(..., false) only unloads when the module isn't
-        // marked Running - and Dmod_Run() is what marks it Running, which only
-        // happens once this thread actually starts executing. Unloading from the
-        // caller right after spawning (before the scheduler necessarily gave this
-        // thread any time to run) would see Running still false and destroy the
-        // context out from under a module that hasn't run yet. By the time we get
-        // here, Dmod_Run() has already cleared Running back to false on its way out,
-        // so this unload is always safe.
-        Dmod_Unload(spawn_args->context, false);
-
-        // Dmod_Unload just freed the context - clear the process's link to it so
-        // Dmod_GetCurrentContext() can never hand back a dangling pointer if anything
-        // queries it for this process again before dmosi_process_destroy() runs (which
-        // happens much later, at reap time, from a different thread).
-        dmosi_process_set_context(spawn_args->process, NULL);
-
-        // Free the structure before exiting (Exit never returns)
+        // The arguments are tagged with the name of the module, like everything it allocates: they
+        // are freed here, before anything can release the module's memory in bulk.
+        Dmod_Context_t* context = spawn_args->context;
+        int argc = spawn_args->argc;
+        char** argv = spawn_args->argv;
         Dmod_Free(spawn_args);
 
-        // Exit the process with the result code
-        // This allows Dmod_GetProcessResult to retrieve the exit status
+        // Run the module and get result
+        int result = Dmod_Run(context, argc, argv);
+
+        // Exit the process with the result code. This allows Dmod_GetProcessResult to retrieve the
+        // exit status - and ends the process, which unloads the module (dmod_spawn_process_exited):
+        // the same way it does when the process is killed, or when it crashes.
         Dmod_Exit(result);
     }
+}
+
+/**
+ * @brief Exit callback of a process that runs a module: unloads the module
+ *
+ * The end of the process is what ends the life of the module it runs, however it ends: the
+ * module returned from main(), the process was killed, or the system terminated it because
+ * of a fault (see dmosi_process_fault()). It runs when the last thread of the process has
+ * exited, so nothing of the module is executing any more - which is why the unload is forced:
+ * a module whose process was cut short is still marked as running.
+ *
+ * (Unloading from the thread that ran the module is not an option: the memory of the thread
+ * is tagged with the name of the module, and unloading it frees everything under that tag.)
+ *
+ * @param process Process that has terminated
+ * @param exit_status Exit status of the process (unused)
+ * @param arg Context of the module the process ran
+ */
+static void dmod_spawn_process_exited(dmosi_process_t process, int exit_status, void* arg)
+{
+    (void)exit_status;
+
+    // Dmod_GetCurrentContext() can never hand back a dangling pointer to a context
+    // that is about to be freed, should anything query it for this process again
+    // before dmosi_process_destroy() runs (which happens much later, at reap time).
+    dmosi_process_set_context(process, NULL);
+    Dmod_Unload((Dmod_Context_t*)arg, true);
 }
 
 /**
@@ -1689,7 +1756,17 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
     spawn_args->context = Context;
     spawn_args->argc = argc;
     spawn_args->argv = argv;
-    spawn_args->process = new_process;
+
+    // The process unloads the module when it ends (see dmod_spawn_process_exited), whichever way
+    // it ends. Registered before the thread exists, so there is no way to miss its end.
+    dmosi_process_exit_callback_handle_t unload_handle =
+        dmosi_process_register_exit_callback(new_process, dmod_spawn_process_exited, Context);
+    if (unload_handle == NULL) {
+        DMOD_LOG_ERROR("Failed to register the unload of module '%s' at the end of its process\n", module_name);
+        Dmod_Free(spawn_args);
+        dmosi_process_destroy(new_process);
+        return -ENOMEM;
+    }
 
     // Get stack size from Context header and add overhead for thread/module startup
     uint64_t stack_size = Dmod_GetStackSize(Context);
@@ -1729,6 +1806,8 @@ static Dmod_Pid_t dmod_spawn_module_internal(Dmod_Context_t* Context, int argc, 
 
     if (thread == NULL) {
         DMOD_LOG_ERROR("Failed to create thread for module '%s'\n", module_name);
+        // The caller unloads the module: it is not for the process to do it
+        dmosi_process_unregister_exit_callback(new_process, unload_handle);
         Dmod_Free(spawn_args);
         dmosi_process_destroy(new_process);
         return -ENOMEM;

@@ -223,6 +223,14 @@ ctest
 └─────────────────────────────────────────┘
 ```
 
+### 8. **Fault API**
+Containing a crash to the process that caused it, instead of halting the whole system. A thread that runs out of stack, or that the CPU refuses to run, is reported on the standard output of its process, and the process is terminated. Each layer does what only it can:
+- `dmosi_thread_fault()` — called by the architecture's exception handler with a `dmosi_fault_t`: the thread backend decides whether the fault can be contained and where the thread continues (`dmosi_fault_recovery_t`)
+- `dmosi_process_fault()` — called by the resumed thread (or by the backend, for a stack overflow it found itself): the process backend reports the fault and kills the process
+- `dmosi_stack_guard_select()` — called on every switch to a thread, so an architecture with memory protection can make the memory below its stack fault (`DMOSI_STACK_GUARD_SIZE`)
+
+The weak defaults contain nothing: every fault is fatal.
+
 ## Weak Implementations
 
 All functions have weak implementations that return error codes or NULL. This allows:
