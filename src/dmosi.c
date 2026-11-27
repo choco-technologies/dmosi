@@ -1257,6 +1257,18 @@ DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, bool, _thread_fault, (const dmosi_f
 }
 
 /**
+ * @brief Default (weak) implementation of dmosi_thread_fault_supervisor_restart
+ *
+ * Overridden by a thread backend that has a thread for handling faults.
+ *
+ * @return int Always -ENOSYS
+ */
+DMOD_INPUT_WEAK_API_DECLARATION( dmosi, 1.0, int, _thread_fault_supervisor_restart, (void) )
+{
+    return -ENOSYS;
+}
+
+/**
  * @brief Default (weak) implementation of dmosi_stack_guard_select
  *
  * Overridden by an architecture that can protect memory. Without it a stack
