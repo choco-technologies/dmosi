@@ -1231,6 +1231,23 @@ DMOD_BUILTIN_API( dmosi, 1.0, bool, _thread_fault, (const dmosi_fault_t* fault, 
 DMOD_BUILTIN_API( dmosi, 1.0, int,  _process_fault, (dmosi_process_t process, const dmosi_fault_t* fault) );
 
 /**
+ * @brief Replace the thread that handles faults with a new one, in the memory that is the first choice now
+ *
+ * The thread that takes processes down after a fault (see dmosi_thread_fault()) is started with the system, long before
+ * every kind of memory exists - and its stack is the biggest one of the system, since it prints the report and unloads the
+ * module of the process. Once a bigger or slower heap is there (an external RAM, see dmheap_register_heap_added_callback()),
+ * calling this makes the thread start a new one, whose stack is where allocations go first now, and end: its own stack is
+ * given back.
+ *
+ * It returns once the request is queued: the thread takes it after the faults that were queued before it, so none is lost
+ * and the thread is never replaced in the middle of one. Faults that come meanwhile wait in the queue for the new thread.
+ *
+ * @return int 0 when the replacement is queued, -EBUSY when the queue of the thread is full (nothing is changed), -ENOSYS
+ *         when the backend has no such thread
+ */
+DMOD_BUILTIN_API( dmosi, 1.0, int,  _thread_fault_supervisor_restart, (void) );
+
+/**
  * @brief Size, and alignment, of the stack guard (see dmosi_stack_guard_select())
  *
  * A power of two. It is also the largest frame a function can allocate in one step and still be
